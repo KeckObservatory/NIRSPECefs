@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>NIRSPEC Echelle Format Simulator</title>
+  <link rel=stylesheet type="text/css" href="css/layout.css">
+</head>
+<body>
+
+<div id="full">
+  <div id='container' >    
+    <div id="detector" onmousedown="Drag();">
+      <div id="draggable" >
+        <div class="detectorbox" id="first">ccd3</div>
+        <div class="detectorbox">ccd2</div>
+        <div class="detectorbox" id="final">ccd1</div>
+      </div>
+    </div>
+    <canvas id="echelle" height=2000></canvas>
+  </div>
+
+
+
+  <div id="ui" >
+
+    <div id="header">
+      <p id="title">NIRSPEC Echelle Format Simulator</p>
+      <img id="logo" src="css/keck-logo-small.png">
+      <p id="keck" >Keck Observatory</p>
+    </div>
+
+
+
+    <div id="ui-top"> 
+
+      <div id="spectra" class="interface d1">
+        <canvas id="spectra-gif" class="data"  width=660px height=474px></canvas>
+        <img id="popup" src=""></img>
+      </div>
+
+      <div id="settings" class="interface d2">
+        <div id="toggle" class="data" value="red">
+            Zoom: <input type="range" id="zoom" class="settings-item" min="4" max="24" value="9" onchange="update()"/><br>
+            <input id="toggleColorRed" class="color settings-item" onClick="tog('red')" type="button" value="Red">
+            <input id="toggleColorBlue" class="color settings-item" onClick="tog('blue')" type="button" value="Blue"><br>
+            <select id="switchSlit" class="settings-item" onChange="update();">
+              <option value='7'>Slit Length</option>
+              <option value='3.5'>3.5"</option>
+              <option value='7'>7.0"</option>
+              <option value='14'>14.0"</option>
+              <option value='28'>28.0"</option>
+            </select><br>
+            <input id="toggleDetector" class="settings-item" onClick="detectorTog();" type="button" value="Hide Detector">
+          </div>
+        </div>
+
+    </div>
+
+    <br>
+
+    <div id="ui-bottom">
+
+      <div id="info" class="interface d1" >
+        <div id="Wavelength" class="data">Lambda: 5846 Å</div>
+        <br>
+        <div id="OrderNum" class="data">Order: 61</div>
+        <br>
+        <div id="EchelleAngle" class="data">Echelle Angle<br></div>
+        <br>
+        <div id="CrossDisperserAngle" class="data">Cross Disperser Angle<br></div>
+        <br>
+        <div id="CentralOrder" class="data">Central Order:</div>
+      </div>
+
+      <div id="input" class="interface d2" >
+        <div id="FindLambda" class="data locwave">Locate Wavelength: <br><input type="text" id="lambdainput" value=0 /><br>
+          <input class="SetDetectorPosition" type="button" value="Mark" onClick="findLambdaLocation(document.getElementById('lambdainput').value,true,true);") />
+          <input class="SetDetectorPosition" type="button" value="Go To" onClick="setDetectorPositionWavelength();") />
+          <input class="ClearMarkers" type="button" value="Clear" onClick="clearMarkers();") />
+        </div><br>
+
+        <div class="data">Set Echelle Angle: 
+          <input id="FindEchelleAngle" type="text" value=0 /><br>
+          Set Cross-disperser Angle: 
+          <input id="FindCrossDisperserAngle" type="text" value=0 /><br>
+          <input class="SetDetectorPosition" type="button" value="Go To Angle" onClick="setDetectorPositionAngle();") />
+        </div><br>
+
+        <div class="data">
+          <div class="dropdown">
+            <button>More</button>
+
+            <ul class="dropdown-menu">
+                <li><a href="#home">Help</a></li>
+                <li><a href="#about">Export</a></li>
+                <li><a href="#specs">Specifications</a></li>
+                <li><a href="./efs.html">Reset</a></li>
+            </ul>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script type="text/javascript" src="efs.js"></script>
+
+</body>
+</html>
