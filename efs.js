@@ -1,3 +1,5 @@
+/* NIRSPEC */
+
 var echellecanvas = document.getElementById("echelle");
 var ecwidth = parseInt(window.getComputedStyle(document.getElementById("container"),null).getPropertyValue("width"));
 
