@@ -2,45 +2,61 @@
 
 var echellecanvas = document.getElementById("echelle");
 var ecwidth = parseInt(window.getComputedStyle(document.getElementById("container"),null).getPropertyValue("width"));
-
 echellecanvas.width=1.5 * ecwidth;
 
 var ctx = echellecanvas.getContext("2d");
-
-var spectrumcanvas = document.getElementById("spectra-gif");
-var spectrumctx = spectrumcanvas.getContext("2d");
-
-var spectrumgraph = new Image();
+var spectrumgraph = document.getElementById("spectrumgraph");
+spectrumgraph.scrollTop = (spectrumgraph.scrolltop+50).toString();
 
 const angstroms_per_micron = 10000;
 const mm_per_meter = 1000;
 const mm_per_angstrom = .0000001;
 const MAXO = 100;
 
-const DETECTOR_GAP = 0.1;
-const MM_PER_PIXEL = 0.015;
+const MM_PER_PIXEL = 0.037; // 1/27 or 27/10000?
 const PRECISION = 4;
 
+const DETECTOR_HEIGHT = 1024;
+const DETECTOR_WIDTH = 1024;
+const DETECTOR_NUMBER = 1;
+
 // const arcsec_width = 7;
-const ARCSECONDS_PER_PIXEL = 0.191;
+const ARCSECONDS_PER_PIXEL = 0.193;
 
 const MARKER_COLOR = "white";
 
-var color = "red";
+const color = "violet";
 
-var sigma, delta, theta;    // inputs to the base calculation (Schroeder, 87)
-var max_wavelength;     // Longest waelength in Angstroms.
-var min_wavelength;     // Shortest waelength in Angstroms.
-var camera_focal_length;    // Camera focal length in microns.
-var collimator_focal_length;  // Collimator focal length in microns.
-var xddeltad;       // Cross disperser delta in degrees
-var xdalfbet;       // Cross disperser alpha beta
-var xdsigma;          // Cross disperser sigma
-var xdsigmai;       // Cross disperser sigma i
-var ecsigma;          // Echelle sigma
-var ecthetad;       // Echelle theta in degrees
-var ecdeltad;       // Echelle delta in degrees
-var FSR_2beta;
+/* hardware constants */
+
+var true_max_wavelength = 5.6*angstroms_per_micron;
+var true_min_wavelength = 0.92*angstroms_per_micron;
+var max_wavelength = true_max_wavelength;
+var min_wavelength = true_min_wavelength;
+
+var camera_focal_length = 0.763;
+var collimator_focal_length = 4.155;
+
+// main (echelle)
+var sigma = 43.103; // 1/ruling density in microns
+var delta = 63.5; // echelle blaze
+var theta = 5.000; // original: 5
+
+// cross disperser (STILL USING HIRES DATA)
+var xddeltad = 4.449;
+var xdalfbet = 40.0;
+var xdsigma  = 13.33;
+var xdsigmai = 250.0; // cross disperser lines/mm
+
+// echelle-specific
+var ecsigma = sigma;
+var ecthetad = theta;
+var ecdeltad = delta;
+
+document.getElementById("FindEchelleAngle").value = ecdeltad;
+document.getElementById("FindCrossDisperserAngle").value = xddeltad;
+document.getElementById("EchelleAngle").innerHTML = "Echelle Angle:<br>"+ecdeltad.toString()+String.fromCharCode(176);
+// document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle:<br>"+xddeltad.toString()+String.fromCharCode(176);
 
 var base;  // echelle grating constant m*lambda in microns
 var demag; // resulting magnification as if there were no dispersers
@@ -49,6 +65,7 @@ var f2dbdl;  // factor required to compute length on detector of FSR of an order
 var xdalphad;// the incident angle (alpha) in degrees
 var sinalpha;// sine of the incident angle
 var xdangle; // cross disperser angle (not the one that moves)
+var FSR_2beta;
 
 var i;
 
@@ -77,7 +94,7 @@ var X_UPPER_LIMIT = parseInt(window.getComputedStyle(document.getElementById("co
 var Y_LOWER_LIMIT = 10;          //  Lower limit on coord in Y direction
 var Y_UPPER_LIMIT = echellerect.bottom;
 // var ZOOM = 4.5*((echellerect.right-echellerect.left)/600);
-var ZOOM=4.5;
+var ZOOM = parseFloat(document.getElementById("zoom").value)/2;;
 
 // console.log(ZOOM);
 
@@ -101,11 +118,13 @@ var ydragoffset;
 var detectordim = [0,0];
 
 var plottedwavelengths = [];
+var url;
+var filter = "N1";
 
 function transform_mm_to_screen_pixels(mm) {
     var pixels = [0,0];
-    pixels[0] = Math.round(FOCAL_PLANE_SCREEN_POSITION[0] + ( ZOOM * mm[0] )) + X_LOWER_LIMIT;
-    pixels[1] = Math.round(FOCAL_PLANE_SCREEN_POSITION[1] + ( -ZOOM * mm[1] )) + Y_LOWER_LIMIT;
+    pixels[0] = Math.round(FOCAL_PLANE_SCREEN_POSITION[0] + ( ZOOM * mm[0] )); // TODO: solve equation so focal position 0 = halfway down the screen
+    pixels[1] = Math.round(FOCAL_PLANE_SCREEN_POSITION[1] + ( -ZOOM * mm[1] ));
     return pixels;
   }
 
@@ -118,60 +137,50 @@ function transform_screen_pixels_to_mm( px, py) {
 
 function drawEchelle() {
 
-  if ( color === "red" ) {
+  var max_wavelength = true_max_wavelength;
+  var min_wavelength = true_min_wavelength;
 
-    sigma = 18.984;
-    delta = 70.53;
-    theta = 5.000;
-    
-    max_wavelength = 10043.0;
-    min_wavelength = 2983.0;
-    
-    camera_focal_length = 0.763;
-    collimator_focal_length = 4.155;
-    
-    xddeltad = 4.449;
-    xdalfbet = 40.0;
-    xdsigma  = 4.0;
-    xdsigmai = 250.0;
-    
-    ecsigma = 18.984;
-    ecthetad = 5.000;
-    ecdeltad = 70.53;
-
-    FOCAL_PLANE_SCREEN_POSITION = [ X_LOWER_LIMIT + 225 + (20*ZOOM), Y_LOWER_LIMIT + 275 + (35*ZOOM)];
-
-  }
-
-  else if (color == "blue") {
-
-    sigma = 18.984;
-    delta = 70.58;
-    theta = 5.000;
-    
-    max_wavelength = 6666.0;
-    min_wavelength = 2983.0;
-    
-    camera_focal_length = 0.763;
-    collimator_focal_length = 4.155;
-    
-    xddeltad = 4.46;
-    xdalfbet = 40.0;
-    xdsigma  = 2.5;
-    xdsigmai = 400.0;
-    
-    ecsigma = 18.984;
-    ecthetad = 5.000;
-    ecdeltad = 70.58;
-
-    FOCAL_PLANE_SCREEN_POSITION = [ X_LOWER_LIMIT + 225 + (20*ZOOM), Y_LOWER_LIMIT + (40*ZOOM) + 400];
+  switch(filter) {
+    case "N1":
+      max_wavelength = 1.121;
+      min_wavelength = 0.947;
+      break;
+    case "N2":
+      max_wavelength = 1.293;
+      min_wavelength = 1.089;
+      break;
+    case "N3":
+      max_wavelength = 1.375;
+      min_wavelength = 1.143;
+      break;
+    case "N4":
+      max_wavelength = 1.593;
+      min_wavelength = 1.241;
+      break;
+    case "N5":
+      max_wavelength = 1.808;
+      min_wavelength = 1.413;
+      break;
+    case "N6":
+      max_wavelength = 2.315;
+      min_wavelength = 1.558;
+      break;
+    case "N7":
+      max_wavelength = 2.630;
+      min_wavelength = 1.839;
+      break;
 
   }
+
+  min_wavelength*=angstroms_per_micron;
+  max_wavelength*=angstroms_per_micron;
 
   var detector = document.getElementById("draggable");
-  detectordim = [(4096 *  MM_PER_PIXEL * ZOOM),3*(2048 * MM_PER_PIXEL * ZOOM +1)];
+  detectordim = [(DETECTOR_WIDTH *  MM_PER_PIXEL * ZOOM),DETECTOR_NUMBER*(DETECTOR_HEIGHT * MM_PER_PIXEL * ZOOM +1)];
   detector.style.width = detectordim[0].toString()+'px';
   detector.style.height = detectordim[1].toString()+'px';
+
+  // console.log(detectordim);
   
   var arcsec_width = parseFloat(document.getElementById('switchSlit').value);
   var line_width = (MM_PER_PIXEL*arcsec_width*ZOOM/ARCSECONDS_PER_PIXEL);
@@ -199,6 +208,12 @@ function drawEchelle() {
   max_order_number = Math.round( angstroms_per_micron * base / min_wavelength + 0.5 ) + 1;
   min_order_number = Math.round(angstroms_per_micron * base / max_wavelength - 0.5);
   number_of_orders = (max_order_number - min_order_number - 1);
+
+  var central_order = Math.round((max_order_number-min_order_number)/2);
+
+  // console.log(number_of_orders);
+
+
 
   //console.log("drawing: "+number_of_orders.toString()+" "+color+" orders from "+min_order_number.toString()+" to "+max_order_number.toString());
   // console.log("drawing orders from "+min_order_number.toString()+" to "+max_order_number.toString());
@@ -232,6 +247,10 @@ function drawEchelle() {
     delx[i] = 0.5 * ( x[i+1] - x[i-1] );  // for subseq tilt calcs
   }
 
+  FOCAL_PLANE_SCREEN_POSITION = [ Math.round((X_UPPER_LIMIT-X_LOWER_LIMIT)/2), (10*X_LOWER_LIMIT) + (ZOOM * 0.5 * (x[number_of_orders] + x[number_of_orders-1]))];
+
+  // console.log(FOCAL_PLANE_SCREEN_POSITION);
+
   for (i=1; i<=number_of_orders; i++) {
     var mm1 = [0, 0];    // blue end of an order in focal plane mm
     var mm2 = [0, 0];    // red  end of an order in focal plane mm
@@ -251,6 +270,8 @@ function drawEchelle() {
     // these are the midpoints of each echelle
   }
 
+  // console.log("found midpoints");
+
   // // find width of each order
   // for (i=1; i<=number_of_orders; i++) {
 
@@ -258,15 +279,8 @@ function drawEchelle() {
   // }
 
   ctx.beginPath();
-  if (ZOOM>=4) ctx.strokeStyle = 'black';
-  else {
-    if (color=="red") ctx.strokeStyle = 'red';
-    else ctx.strokeStyle = '#308de3';
-  }
-  
-  if (color=="red") ctx.fillStyle = 'rgba(255,0,0,0.5)';
-  else if (color=="blue") ctx.fillStyle = 'rgba(0,159,255,0.5)';
-
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'rgba(169,72,72,0.5)';
   ctx.lineWidth = 1;
 
   // draw the echellogram!
@@ -287,10 +301,14 @@ function drawEchelle() {
     // console.log("line from ("+pts[0].toString()+","+pts[1].toString()+") to ("+pts[2].toString()+","+pts[3].toString()+")");
   }
 
+  // console.log(minwv);
+
+  // findLambdaLocation(17146,false,false);
+
   findLambdaLocation(parseInt(document.getElementById("lambdainput").value),false,false);
   
   if (!clear) {
-    setDetectorPositionWavelength();
+    // setDetectorPositionWavelength();
   }
 
   // console.log(plottedwavelengths.length);
@@ -302,6 +320,8 @@ function drawEchelle() {
   }
 
   clear=false;
+
+  // console.log(document.getElementById("detectordraggable"))
 
 }
 
@@ -373,9 +393,22 @@ function findLambdaOrderIndex(wav) {
     }
   }
 
+  return number_of_orders;
+
 }
 
 function findLambdaLocation(waveln, set, add) {
+
+  waveln = parseInt(waveln);
+
+  if(waveln<min_wavelength || waveln>max_wavelength) {
+    // if(waveln<6){
+    //   waveln=waveln*angstroms_per_micron;
+    // }
+    // else {
+    return;
+    // }
+  }
 
   if(waveln==0) {
     return [0,0];
@@ -385,7 +418,8 @@ function findLambdaLocation(waveln, set, add) {
     add=false;
   }
 
-  waveln = parseInt(waveln);
+  // console.log(waveln);
+
   // var waveln = document.getElementById("FindLambda").value;
 
   // console.log("finding wavelength location");
@@ -402,22 +436,28 @@ function findLambdaLocation(waveln, set, add) {
   var lambdax = Math.round(ordpoints[0]+percentwvln*(ordpoints[2]-ordpoints[0]));
   var lambday = Math.round(ordpoints[1]+percentwvln*(ordpoints[3]-ordpoints[1]));
 
-  // console.log(lambdax.toString()+" "+lambday.toString())
+  // if(lambday == undefined) {
+  //   console.log('components:');
+  //   console.log(ordpoints[1].toString()+" + ("+percentwvln.toString()+" * ("+ordpoints[3].toString()+" - "+ordpoints[1].toString()+")" );
+  // }
+  // else {
+  //   console.log([lambdax,lambday]);
+  // }
 
   if (set) {
 
     drawX(lambdax,lambday);
     ctx.font="10px Georgia";
-    ctx.fillText(waveln.toString()+" \u212b",lambdax,lambday-8);
+    ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax,lambday-8);
 
     if(lambdax > (ordpoints[0]+((ordpoints[2]-ordpoints[0])/2)) ) {
       drawX(lambdax-(ordpoints[2]-ordpoints[0]),lambday);
-      ctx.fillText(waveln.toString()+" \u212b",lambdax-(ordpoints[2]-ordpoints[0]),lambday-8);
+      ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax-(ordpoints[2]-ordpoints[0]),lambday-8);
 
     }
     else if ( (ordpoints[0]+((ordpoints[2]-ordpoints[0])/2))<(X_UPPER_LIMIT-10) ) {
       drawX(lambdax+(ordpoints[2]-ordpoints[0]),lambday);
-      ctx.fillText(waveln.toString()+" \u212b",lambdax+(ordpoints[2]-ordpoints[0]),lambday-8);
+      ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax+(ordpoints[2]-ordpoints[0]),lambday-8);
 
     }
 
@@ -463,7 +503,7 @@ function setDetectorPositionAngle() {
   var lambdalocation = findLambdaLocation(ecanglelambda,false,false);
 
   document.getElementById("CentralOrder").innerHTML = "Central Order: "+centralorder.toString();
-  document.getElementById("lambdainput").value = ecanglelambda.toPrecision(PRECISION).toString();
+  document.getElementById("lambdainput").value = (ecanglelambda/angstroms_per_micron).toPrecision(PRECISION).toString();
 
   // console.log(ecanglelambda.toString()+": "+findLambdaLocation(ecanglelambda,false).toString());
   // console.log(xdanglelambda.toString()+": "+findLambdaLocation(xdanglelambda,false).toString());
@@ -485,8 +525,8 @@ function setDetectorPositionWavelength() {
 
   ord = findOrderIndex(detcoords[0],detcoords[1]);
 
-  ecangle = ((180/Math.PI)*(Math.asin( order[ord] * setlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) - ecdeltad).toPrecision(PRECISION);
-  xdangle = ((180/Math.PI)*(Math.asin( setlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) - xddeltad).toPrecision(PRECISION);
+  ecangle = ((180/Math.PI)*(Math.asin( order[ord] * setlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) ).toPrecision(PRECISION);
+  xdangle = ((180/Math.PI)*(Math.asin( setlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) ).toPrecision(PRECISION);
   document.getElementById("EchelleAngle").innerHTML = "Echelle Angle = "+ecangle.toString()+String.fromCharCode(176);
   document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle = "+xdangle.toString()+String.fromCharCode(176);
 
@@ -572,7 +612,7 @@ function setDetectorPositionWavelength() {
       if (adjusted_x > maxx) adjusted_x = maxx;
 
       lambda = (findLambda(ord,adjusted_x,adjusted_y)).toPrecision(PRECISION);
-      document.getElementById("Wavelength").innerHTML = "Lambda = "+lambda.toString()+" \u212b";
+      document.getElementById("Wavelength").innerHTML = "Lambda = "+(lambda/angstroms_per_micron).toPrecision(PRECISION).toString()+" \u00B5";
 
       if(drag) {
         var detectordraggable = document.getElementById('detector');
@@ -580,13 +620,15 @@ function setDetectorPositionWavelength() {
         detectordraggable.style.left = detectorposition[0].toString() + 'px';
         detectordraggable.style.top = detectorposition[1].toString() + 'px';
 
-        var detord = findOrderIndex(detectorposition[0]+detectordim[0]/2,detectorposition[1]+detectordim[1]/2);
+        detectorposition_adjusted = [detectorposition[0]+document.getElementById("container").scrollLeft-X_LOWER_LIMIT+detectordim[0]/2,detectorposition[1]+document.getElementById("container").scrollTop-Y_LOWER_LIMIT+detectordim[1]/2]
+
+        var detord = findOrderIndex(detectorposition_adjusted[0],detectorposition_adjusted[1]);
         var detlambda = findLambda(detord,detectorposition[0]+Math.round(detectordim[0]/2),detectorposition[1]+Math.round(detectordim[1]/2));
 
-        document.getElementById("lambdainput").value = detlambda.toPrecision(PRECISION).toString();
+        document.getElementById("lambdainput").value = (detlambda/angstroms_per_micron).toPrecision(PRECISION).toString();
 
-        ecangle = ((180/Math.PI)*(Math.asin( order[detord] * detlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) - ecdeltad).toPrecision(PRECISION);
-        xdangle = ((180/Math.PI)*(Math.asin( detlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) - xddeltad).toPrecision(PRECISION);
+        ecangle = ((180/Math.PI)*(Math.asin( order[detord] * detlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) ).toPrecision(PRECISION);
+        xdangle = ((180/Math.PI)*(Math.asin( detlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) ).toPrecision(PRECISION);
         document.getElementById("EchelleAngle").innerHTML = "Echelle Angle:<br>"+ecangle.toString()+String.fromCharCode(176);
         document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle:<br>"+xdangle.toString()+String.fromCharCode(176);    
         document.getElementById("CentralOrder").innerHTML = "Central Order: "+order[detord].toString();
@@ -615,18 +657,31 @@ function setDetectorPositionWavelength() {
 
     if (!drag) {
       if (posx < X_UPPER_LIMIT && posy < Y_UPPER_LIMIT) {
-        spectrumgraph.onload = function(){
-          // var dim = {
-          //   width:parseInt(window.getComputedStyle(spectrumcanvas,null).getPropertyValue("width")),
-          //   height:parseInt(window.getComputedStyle(spectrumcanvas,null).getPropertyValue("width"))
-          // };
-          spectrumctx.drawImage(spectrumgraph,0,0,spectrumcanvas.width,spectrumcanvas.height);
-          // console.log(dim.width);
-          // console.log(dim.height);
-        };
+        var filterN = parseInt(filter.replace(/\D/g,''));
+        if(order[ord]>=50){
+          url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/"+filter+"order"+order[ord].toString()+".pdf";
+        }
 
-        spectrumgraph.src = "spectra/order"+order[ord].toString()+".gif";
-        document.getElementById("popup").src = "spectra/order"+order[ord].toString()+".gif";
+        else if(order[ord]>=34){
+          if(posx<ecwidth/2) var section = "a";
+          else var section = 'b';
+
+          if(filter==="N5") url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/N5order"+order[ord].toString()+section+".pdf";
+          else if (filter==="N6") url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/n6-ord"+order[ord].toString()+section+".pdf";
+        }
+
+        else {
+          if(posx<ecwidth/3) var section = "a";
+          else if(posx<ecwidth*2/3) var section = "b";
+          else var section = "c";
+          url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/"+filter+"order"+order[ord].toString()+section+".pdf";
+        }
+
+
+        spectrumgraph.src = url;
+          
+        // order"+order[ord].toString()+".gif";
+        document.getElementById("popup").src = url;
       }
     }
 
@@ -636,6 +691,10 @@ function setDetectorPositionWavelength() {
 
   function handleMouseUp(event) {
     drag=false;
+  }
+
+  spectrumgraph.onerror = function(){
+    spectrumgraph.innerHTML = "Sorry, this order has not yet been analyzed for this filter.";
   }
 
 })();
@@ -649,10 +708,10 @@ function clearMarkers() {
 function Drag() {
   drag=true;
   var e = window.event;
-  xdragoffset = Math.round( (e.pageX + document.getElementById("container").scrollLeft - X_LOWER_LIMIT) - parseInt(document.getElementById("detector").style.left) - detectordim[0]/2);
-  ydragoffset = Math.round((e.pageY + document.getElementById("container").scrollTop - Y_LOWER_LIMIT) - parseInt(document.getElementById("detector").style.top) - detectordim[1]/2);
+  xdragoffset = Math.round( e.pageX /*+ document.getElementById("container").scrollLeft - X_LOWER_LIMIT)*/ - parseInt(document.getElementById("detector").style.left) - detectordim[0]/2);
+  ydragoffset = Math.round(e.pageY /*+ document.getElementById("container").scrollTop - Y_LOWER_LIMIT)*/ - parseInt(document.getElementById("detector").style.top) - detectordim[1]/2);
 
-  console.log(xdragoffset.toString()+", "+ydragoffset.toString());
+  // console.log(xdragoffset.toString()+", "+ydragoffset.toString());
 
 }
 
@@ -661,29 +720,16 @@ function update() {
     ZOOM = parseFloat(document.getElementById("zoom").value)/2;
     ctx.beginPath();
     ctx.clearRect(0, 0, 1000, 2000);
+
+    filter = document.getElementById("switchFilter").value;
+
     
     // color=something
     // console.log("drawing echelle, zoom="+ZOOM.toString());
 
     drawEchelle();
 
-}
 
-function tog(Color) {
-  // dark red: #871919, dark blue: #3c84cc, light blue: #4ca6ff, light red: #dd3333
-
-  color = Color;
-
-  if (Color == "red") {
-    document.getElementById('toggleColorBlue').style.backgroundColor = "#042262";
-    document.getElementById('toggleColorRed').style.backgroundColor = "#ee3333";
-  }
-  else if (Color == "blue") {
-    document.getElementById('toggleColorBlue').style.backgroundColor = "#05c3fb";
-    document.getElementById('toggleColorRed').style.backgroundColor = "#871919";
-  }
-
-  update();
 }
 
 function detectorTog() {

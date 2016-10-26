@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+<! ECHELLE FORMAT SIMULATOR FOR NIRSPEC>
 <head>
   <meta charset="utf-8">
   <title>NIRSPEC Echelle Format Simulator</title>
@@ -11,9 +12,7 @@
   <div id='container' >    
     <div id="detector" onmousedown="Drag();">
       <div id="draggable" >
-        <div class="detectorbox" id="first">ccd3</div>
-        <div class="detectorbox">ccd2</div>
-        <div class="detectorbox" id="final">ccd1</div>
+        <div class="detectorbox">ccd</div>
       </div>
     </div>
     <canvas id="echelle" height=2000></canvas>
@@ -34,21 +33,27 @@
     <div id="ui-top"> 
 
       <div id="spectra" class="interface d1">
-        <canvas id="spectra-gif" class="data"  width=660px height=474px></canvas>
-        <img id="popup" src=""></img>
+        <iframe id="spectrumgraph" class="data" src="" ></iframe>
+        <iframe id="popup" src=""></iframe>
       </div>
 
       <div id="settings" class="interface d2">
         <div id="toggle" class="data" value="red">
-            Zoom: <input type="range" id="zoom" class="settings-item" min="4" max="24" value="9" onchange="update()"/><br>
-            <input id="toggleColorRed" class="color settings-item" onClick="tog('red')" type="button" value="Red">
-            <input id="toggleColorBlue" class="color settings-item" onClick="tog('blue')" type="button" value="Blue"><br>
+            Zoom: <input type="range" id="zoom" class="settings-item" min="4" max="24" value="4" onchange="update()"/><br>
             <select id="switchSlit" class="settings-item" onChange="update();">
-              <option value='7'>Slit Length</option>
-              <option value='3.5'>3.5"</option>
-              <option value='7'>7.0"</option>
-              <option value='14'>14.0"</option>
-              <option value='28'>28.0"</option>
+              <option value='12'>Slit Length</option>
+              <option value='12'>12"</option>
+              <option value='24'>24"</option>
+            </select><br>
+            <select id="switchFilter" class="settings-item" onChange="update();">
+              <option value='N1'>Filter</option>
+              <option value='N1'>NIRSPEC-1</option>
+              <option value='N2'>NIRSPEC-2</option>
+              <option value='N3'>NIRSPEC-3 (J)</option>
+              <option value='N4'>NIRSPEC-4</option>
+              <option value='N5'>NIRSPEC-5 (H)</option>
+              <option value='N6'>NIRSPEC-6</option>
+              <option value='N7'>NIRSPEC-7</option>
             </select><br>
             <input id="toggleDetector" class="settings-item" onClick="detectorTog();" type="button" value="Hide Detector">
           </div>
@@ -61,7 +66,7 @@
     <div id="ui-bottom">
 
       <div id="info" class="interface d1" >
-        <div id="Wavelength" class="data">Lambda: 5846 Å</div>
+        <div id="Wavelength" class="data">Lambda: 5846 mm</div>
         <br>
         <div id="OrderNum" class="data">Order: 61</div>
         <br>
@@ -73,8 +78,8 @@
       </div>
 
       <div id="input" class="interface d2" >
-        <div id="FindLambda" class="data locwave">Locate Wavelength: <br><input type="text" id="lambdainput" value=0 /><br>
-          <input class="SetDetectorPosition" type="button" value="Mark" onClick="findLambdaLocation(document.getElementById('lambdainput').value,true,true);") />
+        <div id="FindLambda" class="data locwave">Locate Wavelength: <br><input type="text" id="lambdainput" value=1 /><br>
+          <input class="SetDetectorPosition" type="button" value="Mark" onClick="findLambdaLocation(document.getElementById('lambdainput').value*10000,true,true);") />
           <input class="SetDetectorPosition" type="button" value="Go To" onClick="setDetectorPositionWavelength();") />
           <input class="ClearMarkers" type="button" value="Clear" onClick="clearMarkers();") />
         </div><br>
@@ -108,7 +113,7 @@
 
 </div>
 
-<script type="text/javascript" src="efs.js"></script>
+<script type="text/javascript" src="NIRSPECefs.js"></script>
 
 </body>
 </html>
