@@ -11,7 +11,7 @@ body {
 }
 
 input[type="text"]{
-  width:fill;
+  width:80%;
   text-align: center;
 }
 
@@ -41,12 +41,13 @@ input[type="text"]{
     height: 50%;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: left;
 }
 #logo {
     float:left;
     margin-right: 10px;
 }
+
 #keck {
     margin-left:10px;
     margin-top: auto;
@@ -60,16 +61,15 @@ input[type="text"]{
   width: 55%;
   height: 97%;
   margin: 10px;
-  /* overflow: scroll; */
+  overflow: scroll;
   border: 1px solid black;
+  display: inline-block;
 }
 
 #echelle {
   left:0px;
   top:0px;
   background-color: rgba(120,120,120,0.3);
-  height: 100%;
-  width:100%;
 }
 
 .data {
@@ -89,15 +89,16 @@ input[type="text"]{
 }
 
 #ui {
-  float: left;
+  float: right;
   width: 40%;
   height: 100vh;
   display: inline-block;
-  padding-left: 50px;
+  margin: auto 0;
+  padding-right: 10px;
 }
 
 #ui-top {
-  margin-bottom: 10px;
+  /* margin-bottom: 10px; */
   margin-top: 10px;
   min-height:30%;
   width: 100%;
@@ -121,13 +122,13 @@ input[type="text"]{
   display: inline-block;
   float:left;
   height:100%;
-  width:40%;
+  width:50%;
 }
 .d2 {
   display: inline-block;
   float: left;
   height: 100%;
-  width:50%;
+  width:45%;
 }
 #spectra {
   width: 60%;
@@ -148,6 +149,10 @@ input[type="text"]{
   margin-left: 15px;
 }
 
+#zoom {
+    width: 80%;
+}
+
 #settings {
   width:30%;
   position:relative;
@@ -162,10 +167,7 @@ input[type="text"]{
 
 .settings-item {
   margin-bottom: 10px;
-<<<<<<< HEAD
-  width: 80%;
-=======
->>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
+  width: 75%;
 }
 
 .button {
@@ -280,7 +282,7 @@ select:focus, select:active {
   -moz-user-select: none;
   -o-user-select: none;
   -ms-user-select: none;
-  -khtml-user-select: none;     
+  -khtml-user-select: none;
   user-select: none;
   opacity: 0.35;
   display: block;
@@ -360,4 +362,3 @@ select:focus, select:active {
 .dropdown a:hover {
     background: #BBBBBB;
 }
-
