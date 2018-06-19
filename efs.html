@@ -1,119 +1,136 @@
 <!DOCTYPE html>
 <html>
-<! ECHELLE FORMAT SIMULATOR FOR NIRSPEC>
 <head>
-  <meta charset="utf-8">
-  <title>NIRSPEC Echelle Format Simulator</title>
-  <link rel=stylesheet type="text/css" href="css/layout.css">
+    <meta charset="utf-8">
+    <title>NIRSPEC Echelle Format Simulator</title>
+    <link rel=stylesheet type="text/css" href="css/layout.css">
+
+    <script src="https://code.jquery.com/jquery-1.12.4.js" type="text/javascript" ></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js" type="text/javascript" ></script>
 </head>
 <body>
 
-<div id="full">
-  <div id='container' >    
-    <div id="detector" onmousedown="Drag();">
-      <div id="draggable" >
-        <div class="detectorbox">ccd</div>
-      </div>
-    </div>
-    <canvas id="echelle" height=2000></canvas>
-  </div>
+    <div id="full">
+        <div id='container' >
+            <div id="detector" onmousedown="Drag();">
+                <div id="draggable" >
+                    <div class="detectorbox">ccd</div>
+                </div>
+            </div>
+            <canvas id="echelle" height=2000></canvas>
+        </div>
 
 
 
-  <div id="ui" >
+        <div id="ui" >
 
-    <div id="header">
-      <p id="title">NIRSPEC Echelle Format Simulator</p>
-      <img id="logo" src="css/keck-logo-small.png">
-      <p id="keck" >Keck Observatory</p>
-    </div>
+            <div id="header">
+                <p id="title">NIRSPEC Echelle Format Simulator</p>
+                <img id="logo" src="css/keck-logo-small.png">
+                <p id="keck" >Keck Observatory</p>
+            </div>
 
 
 
-    <div id="ui-top"> 
+            <div id="ui-top">
 
-      <div id="spectra" class="interface d1">
-        <iframe id="spectrumgraph" class="data" src="" ></iframe>
-        <iframe id="popup" src=""></iframe>
-      </div>
+                <div id="spectra" class="interface d1">
+                    <iframe id="spectrumgraph" class="data graph" src="" ></iframe>
+                    <iframe id="popup" class="graph" src=""></iframe>
+                </div>
 
-      <div id="settings" class="interface d2">
-        <div id="toggle" class="data" value="red">
-            Zoom: <input type="range" id="zoom" class="settings-item" min="4" max="24" value="4" onchange="update()"/><br>
-            <select id="switchSlit" class="settings-item" onChange="update();">
-              <option value='12'>Slit Length</option>
-              <option value='12'>12"</option>
-              <option value='24'>24"</option>
-            </select><br>
-            <select id="switchFilter" class="settings-item" onChange="update();">
-              <option value='N1'>Filter</option>
-              <option value='N1'>NIRSPEC-1</option>
-              <option value='N2'>NIRSPEC-2</option>
-              <option value='N3'>NIRSPEC-3 (J)</option>
-              <option value='N4'>NIRSPEC-4</option>
-              <option value='N5'>NIRSPEC-5 (H)</option>
-              <option value='N6'>NIRSPEC-6</option>
-              <option value='N7'>NIRSPEC-7</option>
-            </select><br>
-            <input id="toggleDetector" class="settings-item" onClick="detectorTog();" type="button" value="Hide Detector">
-          </div>
+                <div id="settings" class="interface d2">
+                    <div id="toggle" class="data" value="red">
+                        Zoom: <input type="range" id="zoom" class="settings-item" min="4" max="24" value=10 /><br>
+                        <select id="switchSlit" class="settings-item" >
+                            <option selected disabled value='12'>Slit Length</option>
+                            <option value='12'>12"</option>
+                            <option value='24'>24"</option>
+                        </select><br>
+                        <select id="switchFilter" class="settings-item" >
+                            <option selected disabled value="N1">Filter</option>
+                            <optgroup label="Wheel 1">
+                                <option value='LP'>L-Prime</option>
+                                <option value='MP'>M-Prime</option>
+                                <option value='KL'>KL</option>
+                                <option value='HeI'>HeI</option>
+                                <option value='PB'>Pa-Beta</option>
+                                <option value='H2'>H2</option>
+                                <option value='FeII'>FeII</option>
+                                <option value='MW'>M-Wide</option>
+                            </optgroup>
+                            <optgroup label="Wheel 2">
+                                <option value='N1'>N-1</option>
+                                <option value='N2'>N-2</option>
+                                <option value='N3'>N-3 (J)</option>
+                                <option value='N4'>N-4</option>
+                                <option value='N5'>N-5 (H)</option>
+                                <option value='N6'>N-6</option>
+                                <option value='N7'>N-7</option>
+                                <option value='CO'>CO</option>
+                                <option value='K'>K</option>
+                                <option value='K-Prime'>K-Prime</option>
+                            </optgroup>
+                        </select><br>
+                        <input id="toggleDetector" class="settings-item" type="button" value="Hide Detector">
+                    </div>
+                </div>
+
+            </div>
+
+            <br>
+
+            <div id="ui-bottom">
+
+                <div id="info" class="interface d1" >
+                    <div id="Wavelength" class="data">Lambda: 5846 mm</div>
+                    <br>
+                    <div id="OrderNum" class="data">Order: 61</div>
+                    <br>
+                    <div id="EchelleAngle" class="data">Echelle Angle<br></div>
+                    <br>
+                    <div id="CrossDisperserAngle" class="data">Cross Disperser Angle<br></div>
+                    <br>
+                    <div id="CentralOrder" class="data">Central Order:</div>
+                </div>
+
+                <div id="input" class="interface d2" >
+                    <div id="FindLambda" class="data locwave">Locate Wavelength: <br><input type="text" id="lambdainput" value=1 /><br>
+                        <input class="SetDetectorPosition" type="button" value="Mark" onClick="findLambdaLocation(document.getElementById('lambdainput').value*10000,true,true);") />
+                        <input class="SetDetectorPosition" type="button" value="Go To" onClick="setDetectorPositionWavelength();") />
+                        <input class="ClearMarkers" type="button" value="Clear" onClick="clearMarkers();") />
+                    </div><br>
+
+                    <div class="data">Set Echelle Angle:
+                        <input id="FindEchelleAngle" type="text" value=0 /><br>
+                        Set Cross-disperser Angle:
+                        <input id="FindCrossDisperserAngle" type="text" value=0 /><br>
+                        <input class="SetDetectorPosition" type="button" value="Go To Angle" onClick="setDetectorPositionAngle();") />
+                    </div><br>
+
+                    <div class="data">
+                        <div class="dropdown">
+                            <button>More</button>
+
+                            <ul class="dropdown-menu">
+                                <li><a href="#home">Help</a></li>
+                                <li><a href="#about">Export</a></li>
+                                <li><a href="#specs">Specifications</a></li>
+                                <li><a href="./efs.html">Reset</a></li>
+                            </ul>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
 
     </div>
 
-    <br>
-
-    <div id="ui-bottom">
-
-      <div id="info" class="interface d1" >
-        <div id="Wavelength" class="data">Lambda: 5846 mm</div>
-        <br>
-        <div id="OrderNum" class="data">Order: 61</div>
-        <br>
-        <div id="EchelleAngle" class="data">Echelle Angle<br></div>
-        <br>
-        <div id="CrossDisperserAngle" class="data">Cross Disperser Angle<br></div>
-        <br>
-        <div id="CentralOrder" class="data">Central Order:</div>
-      </div>
-
-      <div id="input" class="interface d2" >
-        <div id="FindLambda" class="data locwave">Locate Wavelength: <br><input type="text" id="lambdainput" value=1 /><br>
-          <input class="SetDetectorPosition" type="button" value="Mark" onClick="findLambdaLocation(document.getElementById('lambdainput').value*10000,true,true);") />
-          <input class="SetDetectorPosition" type="button" value="Go To" onClick="setDetectorPositionWavelength();") />
-          <input class="ClearMarkers" type="button" value="Clear" onClick="clearMarkers();") />
-        </div><br>
-
-        <div class="data">Set Echelle Angle: 
-          <input id="FindEchelleAngle" type="text" value=0 /><br>
-          Set Cross-disperser Angle: 
-          <input id="FindCrossDisperserAngle" type="text" value=0 /><br>
-          <input class="SetDetectorPosition" type="button" value="Go To Angle" onClick="setDetectorPositionAngle();") />
-        </div><br>
-
-        <div class="data">
-          <div class="dropdown">
-            <button>More</button>
-
-            <ul class="dropdown-menu">
-                <li><a href="#home">Help</a></li>
-                <li><a href="#about">Export</a></li>
-                <li><a href="#specs">Specifications</a></li>
-                <li><a href="./efs.html">Reset</a></li>
-            </ul>
-          </div>
-
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-</div>
-
-<script type="text/javascript" src="NIRSPECefs.js"></script>
+    <script type="text/javascript" src="NIRSPECefs.js"></script>
 
 </body>
 </html>
