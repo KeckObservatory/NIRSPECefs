@@ -1,11 +1,11 @@
 /* NIRSPEC */
 
 var echellecanvas = document.getElementById("echelle");
-var ecwidth = parseInt(window.getComputedStyle(document.getElementById("container"),null).getPropertyValue("width"));
-echellecanvas.width=1.5 * ecwidth;
+ecwidth = parseInt($('#container').css("width"));
 
 var ctx = echellecanvas.getContext("2d");
-$("#spectrumgraph").scrollTop(($("#spectrumgraph").scrollTop()+50).toString());
+var spectrumgraph = document.getElementById("spectrumgraph");
+spectrumgraph.scrollTop = (spectrumgraph.scrolltop+50).toString();
 
 const angstroms_per_micron = 10000;
 const mm_per_meter = 1000;
@@ -28,6 +28,7 @@ const color = "violet";
 
 /* hardware constants */
 
+<<<<<<< HEAD
 // min/max for each filter
 var filters = {
     // wheel 1
@@ -52,11 +53,15 @@ var filters = {
     "KP": [1.950, 2.295]
 }
 
+// absolute instrument limits
+=======
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
 var true_max_wavelength = 5.6*angstroms_per_micron;
 var true_min_wavelength = 0.92*angstroms_per_micron;
 var max_wavelength = true_max_wavelength;
 var min_wavelength = true_min_wavelength;
 
+// physical camera constants
 var camera_focal_length = 0.763;
 var collimator_focal_length = 4.155;
 
@@ -76,9 +81,9 @@ var ecsigma = sigma;
 var ecthetad = theta;
 var ecdeltad = delta;
 
-$("#FindEchelleAngle").val(ecdeltad);
-$("#FindCrossDisperserAngle").val(xddeltad);
-$("#EchelleAngle").html("Echelle Angle:<br>"+ecdeltad.toString()+'°');
+document.getElementById("FindEchelleAngle").value = ecdeltad;
+document.getElementById("FindCrossDisperserAngle").value = xddeltad;
+document.getElementById("EchelleAngle").innerHTML = "Echelle Angle:<br>"+ecdeltad.toString()+String.fromCharCode(176);
 // document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle:<br>"+xddeltad.toString()+String.fromCharCode(176);
 
 var base;  // echelle grating constant m*lambda in microns
@@ -113,13 +118,13 @@ var temp;
 var echellerect = echellecanvas.getBoundingClientRect();
 // console.log(echellerect.top, echellerect.right, echellerect.bottom, echellerect.left);
 var X_LOWER_LIMIT = 10;          //  Lower limit on coord in X direction
-var X_UPPER_LIMIT = parseInt(window.getComputedStyle(document.getElementById("container"),null).getPropertyValue("width"));      //  Upper limit on coord in X direction
+var X_UPPER_LIMIT = parseInt($('#container').css("width"));      //  Upper limit on coord in X direction
 var Y_LOWER_LIMIT = 10;          //  Lower limit on coord in Y direction
 var Y_UPPER_LIMIT = echellerect.bottom;
 // var ZOOM = 4.5*((echellerect.right-echellerect.left)/600);
-var ZOOM = parseFloat($("#zoom").val())/2;;
+var ZOOM = parseFloat(document.getElementById("zoom").value)/2;;
 
-console.log(ZOOM);
+// console.log(ZOOM);
 
 var endpoints;
 var drawable;
@@ -143,24 +148,29 @@ var detectordim = [0,0];
 var plottedwavelengths = [];
 var url;
 var filter = "N1";
-var slit = "12"
+<<<<<<< HEAD
+var slit = "12";
+var mode = "low";
+=======
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
 
 function transform_mm_to_screen_pixels(mm) {
     var pixels = [0,0];
     pixels[0] = Math.round(FOCAL_PLANE_SCREEN_POSITION[0] + ( ZOOM * mm[0] )); // TODO: solve equation so focal position 0 = halfway down the screen
     pixels[1] = Math.round(FOCAL_PLANE_SCREEN_POSITION[1] + ( -ZOOM * mm[1] ));
     return pixels;
-}
+  }
 
 function transform_screen_pixels_to_mm( px, py) {
-    var mm = [0,0];
-    mm[0] = ( px - FOCAL_PLANE_SCREEN_POSITION[0] - X_LOWER_LIMIT) / ZOOM;
-    mm[1] = ( py - FOCAL_PLANE_SCREEN_POSITION[1] - Y_LOWER_LIMIT) / (-ZOOM);
-    return mm;
+  var mm = [0,0];
+  mm[0] = ( px - FOCAL_PLANE_SCREEN_POSITION[0] - X_LOWER_LIMIT) / ZOOM;
+  mm[1] = ( py - FOCAL_PLANE_SCREEN_POSITION[1] - Y_LOWER_LIMIT) / (-ZOOM);
+  return mm;
 }
 
 function drawEchelle() {
 
+<<<<<<< HEAD
     max_wavelength = filters[filter][1] * angstroms_per_micron;
     min_wavelength = filters[filter][0] * angstroms_per_micron;
 
@@ -177,7 +187,7 @@ function drawEchelle() {
 
     // console.log(detectordim);
 
-    var arcsec_width = slit;
+    var arcsec_width = slitLength;
     var line_width = (MM_PER_PIXEL*arcsec_width*ZOOM/ARCSECONDS_PER_PIXEL);
     // console.log(line_width); Math.round
 
@@ -238,52 +248,195 @@ function drawEchelle() {
     for ( i = 1; i <= number_of_orders; i++ ) {
         delx[i] = 0.5 * ( x[i+1] - x[i-1] );  // for subseq tilt calcs
     }
+=======
+  var max_wavelength = true_max_wavelength;
+  var min_wavelength = true_min_wavelength;
 
-    FOCAL_PLANE_SCREEN_POSITION = [ Math.round((X_UPPER_LIMIT-X_LOWER_LIMIT)/2), (10*X_LOWER_LIMIT) + (ZOOM * 0.5 * (x[number_of_orders] + x[number_of_orders-1]))];
+  switch(filter) {
+    case "N1":
+      max_wavelength = 1.121;
+      min_wavelength = 0.947;
+      break;
+    case "N2":
+      max_wavelength = 1.293;
+      min_wavelength = 1.089;
+      break;
+    case "N3":
+      max_wavelength = 1.375;
+      min_wavelength = 1.143;
+      break;
+    case "N4":
+      max_wavelength = 1.593;
+      min_wavelength = 1.241;
+      break;
+    case "N5":
+      max_wavelength = 1.808;
+      min_wavelength = 1.413;
+      break;
+    case "N6":
+      max_wavelength = 2.315;
+      min_wavelength = 1.558;
+      break;
+    case "N7":
+      max_wavelength = 2.630;
+      min_wavelength = 1.839;
+      break;
 
-    // console.log(FOCAL_PLANE_SCREEN_POSITION);
+  }
 
-    for (i=1; i<=number_of_orders; i++) {
-        var mm1 = [0, 0];    // blue end of an order in focal plane mm
-        var mm2 = [0, 0];    // red  end of an order in focal plane mm
-        var scr1 = [0, 0];    // blue end of an order in screen pixels
-        var scr2 = [0, 0];    // red  end of an order in screen pixels
+  min_wavelength*=angstroms_per_micron;
+  max_wavelength*=angstroms_per_micron;
 
-        mm1[0] = -0.5 * FSR_2beta[i];
-        mm2[0] = 0.5 * FSR_2beta[i];
+  var detector = document.getElementById("draggable");
+  detectordim = [(DETECTOR_WIDTH *  MM_PER_PIXEL * ZOOM),DETECTOR_NUMBER*(DETECTOR_HEIGHT * MM_PER_PIXEL * ZOOM +1)];
+  detector.style.width = detectordim[0].toString()+'px';
+  detector.style.height = detectordim[1].toString()+'px';
 
-        mm1[1] = 0.5 * (x[i] + x[i - 1]);
-        mm2[1] = 0.5 * (x[i] + x[i + 1]);
+  // console.log(detectordim);
+  
+  var arcsec_width = parseFloat(document.getElementById('switchSlit').value);
+  var line_width = (MM_PER_PIXEL*arcsec_width*ZOOM/ARCSECONDS_PER_PIXEL);
+  // console.log(line_width); Math.round
 
-        scr1 = transform_mm_to_screen_pixels(mm1);
-        scr2 = transform_mm_to_screen_pixels(mm2);
+  f2dbdl = camera_focal_length * mm_per_meter / ( sigma * Math.cos( (delta - theta) * Math.PI/180 ) );
 
-        endpoints.push([scr1[0], scr1[1], scr2[0], scr2[1]]);
-        // these are the midpoints of each echelle
-    }
+  xdangle = 0;
+  xdalphad = xdangle + xddeltad + xdalfbet*0.5;
+  sinalpha = Math.sin( xdalphad * Math.PI / 180 );
+  
+  // console.log("f2dbdl:"+f2dbdl.toString())
 
-    // console.log("found midpoints");
+  fsr = new Array(MAXO);     // Free Spectral Range (mm) of each order
+  FSR_2beta = new Array(MAXO); // width of FSR * beta (mm) of each order
+  order = new Array(MAXO);      // mapping from 0-n indices to order numbers
+  wv = new Array(MAXO);      // blaze wavelength of each order
+  xbeta = new Array(MAXO);
+  x = new Array(MAXO);     // cross disperser displacement at camera (mm)
+  delx = new Array(MAXO);    // tilt delta (mm)
+  endpoints=[];
+  drawable=[];
 
+  base = 2.0 * sigma * Math.sin( delta * Math.PI/180 ) * Math.cos( theta * Math.PI/180 );
+  max_order_number = Math.round( angstroms_per_micron * base / min_wavelength + 0.5 ) + 1;
+  min_order_number = Math.round(angstroms_per_micron * base / max_wavelength - 0.5);
+  number_of_orders = (max_order_number - min_order_number - 1);
+
+  var central_order = Math.round((max_order_number-min_order_number)/2);
+
+  // console.log(number_of_orders);
+
+
+
+  //console.log("drawing: "+number_of_orders.toString()+" "+color+" orders from "+min_order_number.toString()+" to "+max_order_number.toString());
+  // console.log("drawing orders from "+min_order_number.toString()+" to "+max_order_number.toString());
+  // console.log(base);
+  // console.log(number_of_orders.toString()+" orders drawn");
+
+  i = -1;
+  var mi=0;
+
+  for ( mi = max_order_number; mi >= min_order_number; mi-- ) {
+    i++;
+
+    order[i] = mi;
+    bwav = base / order[i];      // blaze wavelength of order i in microns
+    wv[i] = bwav * angstroms_per_micron;  // blaze wavelength or order i in Angstroms
+    fsr[i] = wv[i] / order[i];   // Free Spectral Range of order i in Angstroms
+    FSR_2beta[i]= bwav * f2dbdl;     // length of fsr in mm
+  }
+
+  temp = (xdangle + xddeltad - xdalfbet * 0.5) * Math.PI/180;
+
+  for ( i = 0; i <= number_of_orders+1; i++ ) {
+    xbeta[i] = Math.asin( xdsigmai * mm_per_angstrom * wv[i] - sinalpha );
+  }
+
+  for ( i = 0; i <= number_of_orders+1; i++ ) {
+    x[i] = ( xbeta[i] - temp) * camera_focal_length * mm_per_meter;
+  }
+
+  for ( i = 1; i <= number_of_orders; i++ ) {
+    delx[i] = 0.5 * ( x[i+1] - x[i-1] );  // for subseq tilt calcs
+  }
+
+  FOCAL_PLANE_SCREEN_POSITION = [ Math.round((X_UPPER_LIMIT-X_LOWER_LIMIT)/2), (10*X_LOWER_LIMIT) + (ZOOM * 0.5 * (x[number_of_orders] + x[number_of_orders-1]))];
+
+  // console.log(FOCAL_PLANE_SCREEN_POSITION);
+
+  for (i=1; i<=number_of_orders; i++) {
+    var mm1 = [0, 0];    // blue end of an order in focal plane mm
+    var mm2 = [0, 0];    // red  end of an order in focal plane mm
+    var scr1 = [0, 0];    // blue end of an order in screen pixels
+    var scr2 = [0, 0];    // red  end of an order in screen pixels
+
+    mm1[0] = -0.5 * FSR_2beta[i];
+    mm2[0] = 0.5 * FSR_2beta[i];
+
+    mm1[1] = 0.5 * (x[i] + x[i - 1]);
+    mm2[1] = 0.5 * (x[i] + x[i + 1]);
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
+
+    scr1 = transform_mm_to_screen_pixels(mm1);
+    scr2 = transform_mm_to_screen_pixels(mm2);
+
+    endpoints.push([scr1[0], scr1[1], scr2[0], scr2[1]]);
+    // these are the midpoints of each echelle
+  }
+
+  // console.log("found midpoints");
+
+  // // find width of each order
+  // for (i=1; i<=number_of_orders; i++) {
+
+  //   linewidths[i] = ;
+  // }
+
+  ctx.beginPath();
+  ctx.strokeStyle = 'black';
+  ctx.fillStyle = 'rgba(169,72,72,0.5)';
+  ctx.lineWidth = 1;
+
+<<<<<<< HEAD
     // // find width of each order
     // for (i=1; i<=number_of_orders; i++) {
 
     //   linewidths[i] = ;
     // }
+    var yoffset = parseInt(slitLength)+ZOOM;
+    var xoffset = 30;
 
-    ctx.beginPath();
-    ctx.strokeStyle = 'black';
-    ctx.fillStyle = 'rgba(169,72,72,0.5)';
-    ctx.lineWidth = 1;
+    if (endpoints.slice(-1)[0][3] < 0) {
+        yoffset -= endpoints.slice(-1)[0][3];
+    }
 
     // draw the echellogram!
     for (i = 0; i < endpoints.length; i++) {
+        ctx.beginPath();
+        ctx.strokeStyle = 'black';
+        ctx.fillStyle = 'rgba(169,72,72,0.75)';
+        ctx.lineWidth = 1;
+
         var pts = endpoints[i];
         var thickness = Math.round(line_width/2);
-        ctx.moveTo(pts[0],pts[1]+thickness);
-        ctx.lineTo(pts[2],pts[3]+thickness);
-        ctx.lineTo(pts[2],pts[3]-thickness);
-        ctx.lineTo(pts[0],pts[1]-thickness);
-        ctx.lineTo(pts[0],pts[1]+thickness);
+        // ctx.moveTo(pts[0]*ZOOM/2,(pts[1]+thickness)*ZOOM/2);
+        // ctx.lineTo(pts[2]*ZOOM/2,(pts[3]+thickness)*ZOOM/2);
+        // ctx.lineTo(pts[2]*ZOOM/2,(pts[3]-thickness)*ZOOM/2);
+        // ctx.lineTo(pts[0]*ZOOM/2,(pts[1]-thickness)*ZOOM/2);
+        // ctx.lineTo(pts[0]*ZOOM/2,(pts[1]+thickness)*ZOOM/2);
+
+        ctx.moveTo(pts[0] + xoffset,(pts[1]+thickness) + yoffset);
+        ctx.lineTo(pts[2] + xoffset,(pts[3]+thickness) + yoffset);
+        ctx.lineTo(pts[2] + xoffset,(pts[3]-thickness) + yoffset);
+        ctx.lineTo(pts[0] + xoffset,(pts[1]-thickness) + yoffset);
+        ctx.lineTo(pts[0] + xoffset,(pts[1]+thickness) + yoffset);
+
+        // console.log(pts)
+
+        // ctx.moveTo(30,(pts[1]+thickness) + yoffset);
+        // ctx.lineTo(30+pts[2]-pts[0],(pts[3]+thickness) + yoffset);
+        // ctx.lineTo(30+pts[2]-pts[0],(pts[3]-thickness) + yoffset);
+        // ctx.lineTo(30,(pts[1]-thickness) + yoffset);
+        // ctx.lineTo(30,(pts[1]+thickness) + yoffset);
         ctx.stroke();
         ctx.closePath();
         ctx.fill();
@@ -292,438 +445,501 @@ function drawEchelle() {
 
         // console.log("line from ("+pts[0].toString()+","+pts[1].toString()+") to ("+pts[2].toString()+","+pts[3].toString()+")");
     }
+=======
+  // draw the echellogram!
+  for (i = 0; i < endpoints.length; i++) {
+    var pts = endpoints[i];
+    var thickness = Math.round(line_width/2);
+    ctx.moveTo(pts[0],pts[1]+thickness);
+    ctx.lineTo(pts[2],pts[3]+thickness);
+    ctx.lineTo(pts[2],pts[3]-thickness);
+    ctx.lineTo(pts[0],pts[1]-thickness);
+    ctx.lineTo(pts[0],pts[1]+thickness);
+    ctx.stroke();
+    ctx.closePath();
+    ctx.fill();
 
-    // console.log(minwv);
+    minwv[i] = findLambda(i,pts[0],pts[1]);
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
 
-    // findLambdaLocation(17146,false,false);
+    // console.log("line from ("+pts[0].toString()+","+pts[1].toString()+") to ("+pts[2].toString()+","+pts[3].toString()+")");
+  }
 
-    findLambdaLocation(parseInt($("#lambdainput").val()),false,false);
+  // console.log(minwv);
 
-    if (!clear) {
-        // setDetectorPositionWavelength();
-    }
+  // findLambdaLocation(17146,false,false);
 
-    // console.log(plottedwavelengths.length);
-    for (var count=0; count<plottedwavelengths.length; count++) {
-        if (parseInt(plottedwavelengths[count]) < max_wavelength && parseInt(plottedwavelengths[count]) > min_wavelength) {
-            // console.log(count.toString()+" "+plottedwavelengths[count].toString());
-            findLambdaLocation(plottedwavelengths[count],true,false);
-        }
-    }
+  findLambdaLocation(parseInt(document.getElementById("lambdainput").value),false,false);
+  
+  if (!clear) {
+    // setDetectorPositionWavelength();
+  }
 
-    clear=false;
+  // console.log(plottedwavelengths.length);
+  for (var count=0; count<plottedwavelengths.length; count++) {
+    if (parseInt(plottedwavelengths[count]) < max_wavelength && parseInt(plottedwavelengths[count]) > min_wavelength) {
+      // console.log(count.toString()+" "+plottedwavelengths[count].toString());
+      findLambdaLocation(plottedwavelengths[count],true,false);
+    } 
+  }
 
-    // console.log(document.getElementById("detectordraggable"))
+  clear=false;
+
+  // console.log(document.getElementById("detectordraggable"))
 
 }
 
+window.onload = drawEchelle();
+window.onload = setDetectorPositionAngle();
 
 function OffCenterXheight(x_cursor, order_number) {
 
-    var point = endpoints[order_number];
+  var point = endpoints[order_number];
 
-    if ( point == undefined){
-        return undefined;
-    }
+  if ( point == undefined){
+    return undefined;
+  }
 
-    var slope = -(point[1]-point[3])/(point[2]-point[0]);
-    xheight = (slope*(x_cursor-point[0]))+point[1];
+  var slope = -(point[1]-point[3])/(point[2]-point[0]);
+  xheight = (slope*(x_cursor-point[0]))+point[1];
 
-    return Math.round(xheight);
+  return Math.round(xheight);
 }
 
 function findOrderIndex(cursor_x, cursor_y) {
-    var index = 83;
-    var distance = 1000;
+  var index = 83;
+  var distance = 1000;
 
-    for (var counter = 0; counter <= number_of_orders; counter++) {
-        var dist = Math.abs(cursor_y - OffCenterXheight(cursor_x,counter));
-        if (dist < distance) {
-            distance = dist;
-            index = counter;
-        }
+  for (var counter = 0; counter <= number_of_orders; counter++) {
+    var dist = Math.abs(cursor_y - OffCenterXheight(cursor_x,counter));
+    if (dist < distance) {
+      distance = dist;
+      index = counter;
     }
+  }
 
-    return index;
+  return index;
 }
 
 function findLambda(orderindex, cursor_x, cursor_y) {
-    // original x is in millimeters
-    var xmm = transform_screen_pixels_to_mm(cursor_x,cursor_y)[0];
+  // original x is in millimeters
+  var xmm = transform_screen_pixels_to_mm(cursor_x,cursor_y)[0];
 
-    var order_at_cursor = order[orderindex];
+  var order_at_cursor = order[orderindex];
 
-    var blaze_lambda_at_cursor = wv[orderindex];
-    var dispamm = fsr[orderindex] / FSR_2beta[orderindex]; //converts free spectral range to mm
-    var lambda_at_cursor = blaze_lambda_at_cursor + dispamm * xmm;
+  var blaze_lambda_at_cursor = wv[orderindex];
+  var dispamm = fsr[orderindex] / FSR_2beta[orderindex]; //converts free spectral range to mm
+  var lambda_at_cursor = blaze_lambda_at_cursor + dispamm * xmm;
 
-    var y1 = x[orderindex];
-    y1 = y1 + delx[orderindex] * (cursor_x)/FSR_2beta[orderindex];
-    //    y1 = y1 - delx[ orderindex ] * (cursor_x)/FSR_2beta[orderindex];
-    var dy1 = ( (cursor_y) - y1 ) / delx[orderindex];
+  var y1 = x[orderindex];
+  y1 = y1 + delx[orderindex] * (cursor_x)/FSR_2beta[orderindex];
+//    y1 = y1 - delx[ orderindex ] * (cursor_x)/FSR_2beta[orderindex];
+  var dy1 = ( (cursor_y) - y1 ) / delx[orderindex];
 
-    if ( dy1 > 0 ) {
-        cross_disperser_wavelength = lambda_at_cursor + ( wv[orderindex+1] - wv[orderindex] ) * dy1;
-    }
-    else {
-        cross_disperser_wavelength = lambda_at_cursor + ( wv[orderindex] - wv[orderindex-1] ) * dy1;
-    }
+  if ( dy1 > 0 ) {
+    cross_disperser_wavelength = lambda_at_cursor + ( wv[orderindex+1] - wv[orderindex] ) * dy1;
+  }
+  else {
+    cross_disperser_wavelength = lambda_at_cursor + ( wv[orderindex] - wv[orderindex-1] ) * dy1;
+  }
 
 
-    return lambda_at_cursor;
+  return lambda_at_cursor;
 }
 
 function findLambdaOrderIndex(wav) {
 
-    for(i=number_of_orders; i>0; i--) {
-        if (wav > minwv[i]) {
-            if (wav < minwv[i+1]) {
-                return i;
-            }
-        }
+  for(i=number_of_orders; i>0; i--) {
+    if (wav > minwv[i]) {
+      if (wav < minwv[i+1]) {
+        return i;
+      }
     }
+  }
 
-    return number_of_orders;
+  return number_of_orders;
 
 }
 
 function findLambdaLocation(waveln, set, add) {
 
-    waveln = parseInt(waveln);
+  waveln = parseInt(waveln);
 
-    if(waveln<min_wavelength || waveln>max_wavelength) {
-        // if(waveln<6){
-        //   waveln=waveln*angstroms_per_micron;
-        // }
-        // else {
-        return;
-        // }
-    }
-
-    if(waveln==0) {
-        return [0,0];
-    }
-
-    if(add != true) {
-        add=false;
-    }
-
-    // console.log(waveln);
-
-    // var waveln = document.getElementById("FindLambda").value;
-
-    // console.log("finding wavelength location");
-
-    var lindex = findLambdaOrderIndex(waveln);
-
-    var lorder = order[lindex];
-    var ordpoints = endpoints[lindex];
-    var lmaxwv = findLambda(lindex,ordpoints[2],ordpoints[3]);
-    var lminwv = minwv[lindex];
-
-    var percentwvln = (waveln-lminwv)/(lmaxwv-lminwv);
-
-    var lambdax = Math.round(ordpoints[0]+percentwvln*(ordpoints[2]-ordpoints[0]));
-    var lambday = Math.round(ordpoints[1]+percentwvln*(ordpoints[3]-ordpoints[1]));
-
-    // if(lambday == undefined) {
-    //   console.log('components:');
-    //   console.log(ordpoints[1].toString()+" + ("+percentwvln.toString()+" * ("+ordpoints[3].toString()+" - "+ordpoints[1].toString()+")" );
+  if(waveln<min_wavelength || waveln>max_wavelength) {
+    // if(waveln<6){
+    //   waveln=waveln*angstroms_per_micron;
     // }
     // else {
-    //   console.log([lambdax,lambday]);
+    return;
     // }
+  }
 
-    if (set) {
+  if(waveln==0) {
+    return [0,0];
+  }
 
+  if(add != true) {
+    add=false;
+  }
+
+  // console.log(waveln);
+
+  // var waveln = document.getElementById("FindLambda").value;
+
+  // console.log("finding wavelength location");
+
+  var lindex = findLambdaOrderIndex(waveln);
+
+  var lorder = order[lindex];
+  var ordpoints = endpoints[lindex];
+  var lmaxwv = findLambda(lindex,ordpoints[2],ordpoints[3]);
+  var lminwv = minwv[lindex];
+
+  var percentwvln = (waveln-lminwv)/(lmaxwv-lminwv);
+
+  var lambdax = Math.round(ordpoints[0]+percentwvln*(ordpoints[2]-ordpoints[0]));
+  var lambday = Math.round(ordpoints[1]+percentwvln*(ordpoints[3]-ordpoints[1]));
+
+  // if(lambday == undefined) {
+  //   console.log('components:');
+  //   console.log(ordpoints[1].toString()+" + ("+percentwvln.toString()+" * ("+ordpoints[3].toString()+" - "+ordpoints[1].toString()+")" );
+  // }
+  // else {
+  //   console.log([lambdax,lambday]);
+  // }
+
+<<<<<<< HEAD
         drawX(lambdax,lambday);
-        ctx.font="10px Georgia";
-        ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax,lambday-8);
+        ctx.font="24px Georgia";
+        ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax+10,lambday-8);
+=======
+  if (set) {
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
 
-        if(lambdax > (ordpoints[0]+((ordpoints[2]-ordpoints[0])/2)) ) {
-            drawX(lambdax-(ordpoints[2]-ordpoints[0]),lambday);
-            ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax-(ordpoints[2]-ordpoints[0]),lambday-8);
+    drawX(lambdax,lambday);
+    ctx.font="10px Georgia";
+    ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax,lambday-8);
 
-        }
-        else if ( (ordpoints[0]+((ordpoints[2]-ordpoints[0])/2))<(X_UPPER_LIMIT-10) ) {
-            drawX(lambdax+(ordpoints[2]-ordpoints[0]),lambday);
-            ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax+(ordpoints[2]-ordpoints[0]),lambday-8);
+    if(lambdax > (ordpoints[0]+((ordpoints[2]-ordpoints[0])/2)) ) {
+      drawX(lambdax-(ordpoints[2]-ordpoints[0]),lambday);
+      ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax-(ordpoints[2]-ordpoints[0]),lambday-8);
 
-        }
-
-        if (add) {
-            plottedwavelengths.push(parseInt(waveln));
-            console.log(plottedwavelengths);
-
-        }
+    }
+    else if ( (ordpoints[0]+((ordpoints[2]-ordpoints[0])/2))<(X_UPPER_LIMIT-10) ) {
+      drawX(lambdax+(ordpoints[2]-ordpoints[0]),lambday);
+      ctx.fillText((waveln/angstroms_per_micron).toString()+" \u00B5",lambdax+(ordpoints[2]-ordpoints[0]),lambday-8);
 
     }
 
-    return [lambdax,lambday];
+    if (add) {
+      plottedwavelengths.push(parseInt(waveln));
+      console.log(plottedwavelengths);
+
+    }
+
+  }
+
+  return [lambdax,lambday];
 
 }
 
 function drawX(posx,posy) {
 
-    var size = 3;
+<<<<<<< HEAD
+    var size = 10;
     ctx.beginPath();
     ctx.strokeStyle=MARKER_COLOR;
     ctx.fillStyle=MARKER_COLOR;
+    ctx.lineWidth=2;
     ctx.moveTo(posx-size,posy-size);
     ctx.lineTo(posx+size,posy+size);
     ctx.stroke();
     ctx.moveTo(posx-size,posy+size);
     ctx.lineTo(posx+size,posy-size);
     ctx.stroke();
+=======
+  var size = 3;
+  ctx.beginPath();
+  ctx.strokeStyle=MARKER_COLOR;
+  ctx.fillStyle=MARKER_COLOR;
+  ctx.moveTo(posx-size,posy-size);
+  ctx.lineTo(posx+size,posy+size);
+  ctx.stroke();
+  ctx.moveTo(posx-size,posy+size);
+  ctx.lineTo(posx+size,posy-size);
+  ctx.stroke();
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
 
 }
 
 function setDetectorPositionAngle() {
 
-    var setecangle = parseFloat($("#FindEchelleAngle").val());
-    var setxdangle = parseFloat($("#FindCrossDisperserAngle").val());
+  var setecangle = parseFloat(document.getElementById("FindEchelleAngle").value);
+  var setxdangle = parseFloat(document.getElementById("FindCrossDisperserAngle").value);
 
-    $("#EchelleAngle").html("Echelle Angle:<br>"+setecangle.toString()+String.fromCharCode(176));
-    $("#CrossDisperserAngle").html("Cross Disperser Angle:<br>"+setxdangle.toString()+String.fromCharCode(176));
+  document.getElementById("EchelleAngle").innerHTML = "Echelle Angle:<br>"+setecangle.toString()+String.fromCharCode(176);
+  document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle:<br>"+setxdangle.toString()+String.fromCharCode(176);
 
-    var xdanglelambda = Math.abs( Math.sin((setxdangle+xddeltad)*(Math.PI/180)) * ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180) * (xdalfbet*0.5) ) ) );
-    var centralorder = order[findLambdaOrderIndex(xdanglelambda)];
-    var ecanglelambda = Math.abs( Math.sin((setecangle+ecdeltad)*(Math.PI/180)) * ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180) * ecthetad ) ) / centralorder);
+  var xdanglelambda = Math.abs( Math.sin((setxdangle+xddeltad)*(Math.PI/180)) * ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180) * (xdalfbet*0.5) ) ) );
+  var centralorder = order[findLambdaOrderIndex(xdanglelambda)];
+  var ecanglelambda = Math.abs( Math.sin((setecangle+ecdeltad)*(Math.PI/180)) * ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180) * ecthetad ) ) / centralorder);
 
-    var lambdalocation = findLambdaLocation(ecanglelambda,false,false);
+  var lambdalocation = findLambdaLocation(ecanglelambda,false,false);
 
-    $("#CentralOrder").html("Central Order: "+centralorder.toString());
-    $("#lambdainput").val((ecanglelambda/angstroms_per_micron).toPrecision(PRECISION).toString());
+  document.getElementById("CentralOrder").innerHTML = "Central Order: "+centralorder.toString();
+  document.getElementById("lambdainput").value = (ecanglelambda/angstroms_per_micron).toPrecision(PRECISION).toString();
 
-    // console.log(ecanglelambda.toString()+": "+findLambdaLocation(ecanglelambda,false).toString());
-    // console.log(xdanglelambda.toString()+": "+findLambdaLocation(xdanglelambda,false).toString());
+  // console.log(ecanglelambda.toString()+": "+findLambdaLocation(ecanglelambda,false).toString());
+  // console.log(xdanglelambda.toString()+": "+findLambdaLocation(xdanglelambda,false).toString());
 
-    $('#detector').css({
-        "left": (X_LOWER_LIMIT+lambdalocation[0]-detectordim[0]/2).toString() + 'px',
-        "top": (Y_LOWER_LIMIT+lambdalocation[1]-detectordim[1]/2).toString() + 'px'
-    });
+  var detectordraggable = document.getElementById('detector');
+  detectordraggable.style.left = (X_LOWER_LIMIT+lambdalocation[0]-detectordim[0]/2).toString() + 'px';
+  detectordraggable.style.top = (Y_LOWER_LIMIT+lambdalocation[1]-detectordim[1]/2).toString() + 'px';
 
 }
 
 
 function setDetectorPositionWavelength() {
-    // console.log("set");
-    var setlambda = parseFloat($("#lambdainput").val());
-    var detcoords = findLambdaLocation(setlambda, false,false);
-    $('#detector').css({
-        "left": (detcoords[0]-detectordim[0]/2).toString() + 'px',
-        "top": (detcoords[1]-detectordim[1]/2).toString() + 'px'
-    });
+  // console.log("set");
+  var setlambda = parseFloat(document.getElementById("lambdainput").value);
+  var detcoords = findLambdaLocation(setlambda, false,false);
+  var detectordraggable = document.getElementById('detector');
+  detectordraggable.style.left = (detcoords[0]-detectordim[0]/2).toString() + 'px';
+  detectordraggable.style.top = (detcoords[1]-detectordim[1]/2).toString() + 'px';
 
-    ord = findOrderIndex(detcoords[0],detcoords[1]);
+  ord = findOrderIndex(detcoords[0],detcoords[1]);
 
-    ecangle = ((180/Math.PI)*(Math.asin( order[ord] * setlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) ).toPrecision(PRECISION);
-    xdangle = ((180/Math.PI)*(Math.asin( setlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) ).toPrecision(PRECISION);
-    $("#EchelleAngle").html("Echelle Angle = "+ecangle.toString()+String.fromCharCode(176));
-    $("#CrossDisperserAngle").html("Cross Disperser Angle = "+xdangle.toString()+String.fromCharCode(176));
+  ecangle = ((180/Math.PI)*(Math.asin( order[ord] * setlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) ).toPrecision(PRECISION);
+  xdangle = ((180/Math.PI)*(Math.asin( setlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) ).toPrecision(PRECISION);
+  document.getElementById("EchelleAngle").innerHTML = "Echelle Angle = "+ecangle.toString()+String.fromCharCode(176);
+  document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle = "+xdangle.toString()+String.fromCharCode(176);
 
-    if ($("#toggleDetector").val() == "Show Detector") {
-        detectorTog();
-    }
+  if (document.getElementById("toggleDetector").value == "Show Detector") {
+    detectorTog();
+  }
 }
 
 (function () {
-    // main: this has all of the event capture stuff.
-    adjusted_x=0;
-    adjusted_y=0;
-    ord=1;
+  // main: this has all of the event capture stuff.
+  adjusted_x=0;
+  adjusted_y=0;
+  ord=1;
 
-    function getMouse(e){
-        var posx;
-        var posy;
+  function getMouse(e){
+    var posx;
+    var posy;
 
-        if (!e) var e = window.event;
+    if (!e) var e = window.event;
 
-        if (e.pageX || e.pageY) {
-            posx = e.pageX + document.getElementById("container").scrollLeft;
-            posy = e.pageY + document.getElementById("container").scrollTop;
-        }
-        else if (e.clientX || e.clientY) {
-            posx = e.clientX + document.getElementById("container").scrollLeft;
-            posy = e.clientY + document.getElementById("container").scrollTop;
-        }
-
-        return [posx,posy];
-
+    if (e.pageX || e.pageY) {
+      posx = e.pageX + document.getElementById("container").scrollLeft;
+      posy = e.pageY + document.getElementById("container").scrollTop;
+    }
+    else if (e.clientX || e.clientY) {
+      posx = e.clientX + document.getElementById("container").scrollLeft;
+      posy = e.clientY + document.getElementById("container").scrollTop;
     }
 
-    document.onmousemove = handleMouseMove;
-    function handleMouseMove(e) {
-        var eventDoc, doc, body, pageX, pageY;
+    return [posx,posy];
 
-        // event = event || window.event; //makes stuff work in IE
+  }
 
-        // if (event.pageX == null && event.clientX != null) {
-        //     eventDoc = (event.target && event.target.ownerDocument) || document;
-        //     doc = eventDoc.documentElement;
-        //     body = eventDoc.body;
+  document.onmousemove = handleMouseMove;
+  function handleMouseMove(e) {
+    var eventDoc, doc, body, pageX, pageY;
 
-        //     event.pageX = event.clientX +
-        //       (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
-        //       (doc && doc.clientLeft || body && body.clientLeft || 0);
-        //     event.pageY = event.clientY +
-        //       (doc && doc.scrollTop  || body && body.scrollTop  || 0) -
-        //       (doc && doc.clientTop  || body && body.clientTop  || 0 );
-        //   }
+    // event = event || window.event; //makes stuff work in IE
 
-        var posx;
-        var posy;
+    // if (event.pageX == null && event.clientX != null) {
+    //     eventDoc = (event.target && event.target.ownerDocument) || document;
+    //     doc = eventDoc.documentElement;
+    //     body = eventDoc.body;
 
-        if (!e) var e = window.event;
+    //     event.pageX = event.clientX +
+    //       (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
+    //       (doc && doc.clientLeft || body && body.clientLeft || 0);
+    //     event.pageY = event.clientY +
+    //       (doc && doc.scrollTop  || body && body.scrollTop  || 0) -
+    //       (doc && doc.clientTop  || body && body.clientTop  || 0 );
+    //   }
 
-        if (e.pageX || e.pageY) {
-            posx = e.pageX + document.getElementById("container").scrollLeft - X_LOWER_LIMIT;
-            posy = e.pageY + document.getElementById("container").scrollTop - Y_LOWER_LIMIT;
+    var posx;
+    var posy;
 
-            // console.log("("+posx.toString()+","+posy.toString()+")");
-        }
-        else if (e.clientX || e.clientY) {
-            posx = e.clientX + document.getElementById("container").scrollLeft - X_LOWER_LIMIT;
-            posy = e.clientY + document.getElementById("container").scrollTop - Y_LOWER_LIMIT;
-        }
+    if (!e) var e = window.event;
 
-        adjusted_x = posx;
-        adjusted_y = posy;
-        // <span id="Coords" class="data">Cursor location</span>
-        // document.getElementById("Coords").innerHTML = "Cursor location: ("+adjusted_x.toString()+", "+adjusted_y.toString()+")";
+    if (e.pageX || e.pageY) {
+      posx = e.pageX + document.getElementById("container").scrollLeft - X_LOWER_LIMIT;
+      posy = e.pageY + document.getElementById("container").scrollTop - Y_LOWER_LIMIT;
 
+      // console.log("("+posx.toString()+","+posy.toString()+")");
+    }
+    else if (e.clientX || e.clientY) {
+      posx = e.clientX + document.getElementById("container").scrollLeft - X_LOWER_LIMIT;
+      posy = e.clientY + document.getElementById("container").scrollTop - Y_LOWER_LIMIT;
+    }
 
-        if (posx < X_UPPER_LIMIT && posy < Y_UPPER_LIMIT) {
-            ord = findOrderIndex(adjusted_x,adjusted_y);
-            document.getElementById("OrderNum").innerHTML = "Order: "+order[ord].toString();
-            // console.log(ord);
-            minx = endpoints[ord][0];
-            maxx = endpoints[ord][2];
+    adjusted_x = posx;
+    adjusted_y = posy;
+    // <span id="Coords" class="data">Cursor location</span>
+    // document.getElementById("Coords").innerHTML = "Cursor location: ("+adjusted_x.toString()+", "+adjusted_y.toString()+")";
+    
 
-            if (adjusted_x < minx) adjusted_x = minx;
-            if (adjusted_x > maxx) adjusted_x = maxx;
+    if (posx < X_UPPER_LIMIT && posy < Y_UPPER_LIMIT) {
+      ord = findOrderIndex(adjusted_x,adjusted_y);
+      document.getElementById("OrderNum").innerHTML = "Order: "+order[ord].toString();
+      // console.log(ord);
+      minx = endpoints[ord][0];
+      maxx = endpoints[ord][2];
 
-            lambda = (findLambda(ord,adjusted_x,adjusted_y)).toPrecision(PRECISION);
-            document.getElementById("Wavelength").innerHTML = "Lambda = "+(lambda/angstroms_per_micron).toPrecision(PRECISION).toString()+" \u00B5m";
+      if (adjusted_x < minx) adjusted_x = minx;
+      if (adjusted_x > maxx) adjusted_x = maxx;
 
-            if(drag) {
-                var detectordraggable = document.getElementById('detector');
-                var detectorposition = [Math.round(e.pageX - xdragoffset - detectordim[0]/2),Math.round(e.pageY- ydragoffset - detectordim[1]/2)];
-                detectordraggable.style.left = detectorposition[0].toString() + 'px';
-                detectordraggable.style.top = detectorposition[1].toString() + 'px';
+<<<<<<< HEAD
+            lambda = (findLambda(ord,adjusted_x,adjusted_y)).toFixed(PRECISION-1);
+            document.getElementById("Wavelength").innerHTML = "Lambda = "+(lambda/angstroms_per_micron).toFixed(PRECISION-1).toString()+" \u00B5m";
+=======
+      lambda = (findLambda(ord,adjusted_x,adjusted_y)).toPrecision(PRECISION);
+      document.getElementById("Wavelength").innerHTML = "Lambda = "+(lambda/angstroms_per_micron).toPrecision(PRECISION).toString()+" \u00B5";
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
 
-                detectorposition_adjusted = [detectorposition[0]+document.getElementById("container").scrollLeft-X_LOWER_LIMIT+detectordim[0]/2,detectorposition[1]+document.getElementById("container").scrollTop-Y_LOWER_LIMIT+detectordim[1]/2]
+      if(drag) {
+        var detectordraggable = document.getElementById('detector');
+        var detectorposition = [Math.round(e.pageX - xdragoffset - detectordim[0]/2),Math.round(e.pageY- ydragoffset - detectordim[1]/2)];
+        detectordraggable.style.left = detectorposition[0].toString() + 'px';
+        detectordraggable.style.top = detectorposition[1].toString() + 'px';
 
-                var detord = findOrderIndex(detectorposition_adjusted[0],detectorposition_adjusted[1]);
-                var detlambda = findLambda(detord,detectorposition[0]+Math.round(detectordim[0]/2),detectorposition[1]+Math.round(detectordim[1]/2));
+        detectorposition_adjusted = [detectorposition[0]+document.getElementById("container").scrollLeft-X_LOWER_LIMIT+detectordim[0]/2,detectorposition[1]+document.getElementById("container").scrollTop-Y_LOWER_LIMIT+detectordim[1]/2]
 
-                document.getElementById("lambdainput").value = (detlambda/angstroms_per_micron).toPrecision(PRECISION).toString();
+        var detord = findOrderIndex(detectorposition_adjusted[0],detectorposition_adjusted[1]);
+        var detlambda = findLambda(detord,detectorposition[0]+Math.round(detectordim[0]/2),detectorposition[1]+Math.round(detectordim[1]/2));
 
+        document.getElementById("lambdainput").value = (detlambda/angstroms_per_micron).toPrecision(PRECISION).toString();
+
+<<<<<<< HEAD
                 ecangle = ((180/Math.PI)*(Math.asin( order[detord] * detlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) ).toPrecision(PRECISION);
                 xdangle = ((180/Math.PI)*(Math.asin( detlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) ).toPrecision(PRECISION);
                 document.getElementById("EchelleAngle").innerHTML = "Echelle Angle:<br>"+ecangle.toString()+String.fromCharCode(176);
                 document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle:<br>"+xdangle.toString()+String.fromCharCode(176);
-                document.getElementById("CentralOrder").innerHTML = "Central Order: "+order[detord].toString();
+                console.log(detord)
+                document.getElementById("CentralOrder").innerHTML = "Central Order: "+detord.toString();
             }
         }
+=======
+        ecangle = ((180/Math.PI)*(Math.asin( order[detord] * detlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) ).toPrecision(PRECISION);
+        xdangle = ((180/Math.PI)*(Math.asin( detlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) ).toPrecision(PRECISION);
+        document.getElementById("EchelleAngle").innerHTML = "Echelle Angle:<br>"+ecangle.toString()+String.fromCharCode(176);
+        document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle:<br>"+xdangle.toString()+String.fromCharCode(176);    
+        document.getElementById("CentralOrder").innerHTML = "Central Order: "+order[detord].toString();
+      }
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
+    }
+  }
+
+  document.onclick = handleClick;
+
+  function handleClick(e) {
+    var eventDoc, doc, body, pageX, pageY;
+
+    var posx;
+    var posy;
+
+    if (!e) var e = window.event;
+
+    if (e.pageX || e.pageY) {
+      posx = e.pageX + document.getElementById("container").scrollLeft - X_LOWER_LIMIT;
+      posy = e.pageY + document.getElementById("container").scrollTop - Y_LOWER_LIMIT;
+    }
+    else if (e.clientX || e.clientY) {
+      posx = e.clientX + document.getElementById("container").scrollLeft - X_LOWER_LIMIT;
+      posy = e.clientY + document.getElementById("container").scrollTop - Y_LOWER_LIMIT;
     }
 
-    document.onclick = handleClick;
-
-    function handleClick(e) {
-        var eventDoc, doc, body, pageX, pageY;
-
-        var posx;
-        var posy;
-
-        if (!e) var e = window.event;
-
-        if (e.pageX || e.pageY) {
-            posx = e.pageX + document.getElementById("container").scrollLeft - X_LOWER_LIMIT;
-            posy = e.pageY + document.getElementById("container").scrollTop - Y_LOWER_LIMIT;
-        }
-        else if (e.clientX || e.clientY) {
-            posx = e.clientX + document.getElementById("container").scrollLeft - X_LOWER_LIMIT;
-            posy = e.clientY + document.getElementById("container").scrollTop - Y_LOWER_LIMIT;
+    if (!drag) {
+      if (posx < X_UPPER_LIMIT && posy < Y_UPPER_LIMIT) {
+        var filterN = parseInt(filter.replace(/\D/g,''));
+        if(order[ord]>=50){
+          url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/"+filter+"order"+order[ord].toString()+".pdf";
         }
 
-        if (!drag) {
-            if (posx < X_UPPER_LIMIT && posy < Y_UPPER_LIMIT) {
-                var filterN = parseInt(filter.replace(/\D/g,''));
-                if(order[ord]>=50){
-                    url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/"+filter+"order"+order[ord].toString()+".pdf";
-                }
+        else if(order[ord]>=34){
+          if(posx<ecwidth/2) var section = "a";
+          else var section = 'b';
 
-                else if(order[ord]>=34){
-                    if(posx<ecwidth/2) var section = "a";
-                    else var section = 'b';
-
-                    if(filter==="N5") url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/N5order"+order[ord].toString()+section+".pdf";
-                    else if (filter==="N6") url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/n6-ord"+order[ord].toString()+section+".pdf";
-                }
-
-                else {
-                    if(posx<ecwidth/3) var section = "a";
-                    else if(posx<ecwidth*2/3) var section = "b";
-                    else var section = "c";
-                    url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/"+filter+"order"+order[ord].toString()+section+".pdf";
-                }
-
-
-                try {
-                    $(".graph").attr("src", url);
-                }
-
-                catch (err) {
-                    $(".graph").attr("src", "");
-                    console.log(err)
-                }
-            }
+          if(filter==="N5") url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/N5order"+order[ord].toString()+section+".pdf";
+          else if (filter==="N6") url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/n6-ord"+order[ord].toString()+section+".pdf";
         }
 
+        else {
+          if(posx<ecwidth/3) var section = "a";
+          else if(posx<ecwidth*2/3) var section = "b";
+          else var section = "c";
+          url = "https://www.keck.hawaii.edu/realpublic/inst/nirspec/images/"+filter+"order"+order[ord].toString()+section+".pdf";
+        }
+
+
+        spectrumgraph.src = url;
+          
+        // order"+order[ord].toString()+".gif";
+        document.getElementById("popup").src = url;
+      }
     }
 
-    document.onmouseup = handleMouseUp;
+  }
 
-    function handleMouseUp(event) {
-        drag=false;
-    }
+  document.onmouseup = handleMouseUp;
 
-    $("#spectrumgraph").on("error", function(){
-        this.html("Sorry, this order has not yet been analyzed for this filter.");
-    });
+  function handleMouseUp(event) {
+    drag=false;
+  }
+
+  spectrumgraph.onerror = function(){
+    spectrumgraph.innerHTML = "Sorry, this order has not yet been analyzed for this filter.";
+  }
 
 })();
 
 function clearMarkers() {
-    plottedwavelengths = [];
-    clear=true;
-    update();
+  plottedwavelengths = [];
+  clear=true;
+  update();
 }
 
 function Drag() {
-    drag=true;
-    var e = window.event;
-    xdragoffset = Math.round( e.pageX /*+ document.getElementById("container").scrollLeft - X_LOWER_LIMIT)*/ - parseInt(document.getElementById("detector").style.left) - detectordim[0]/2);
-    ydragoffset = Math.round(e.pageY /*+ document.getElementById("container").scrollTop - Y_LOWER_LIMIT)*/ - parseInt(document.getElementById("detector").style.top) - detectordim[1]/2);
+  drag=true;
+  var e = window.event;
+  xdragoffset = Math.round( e.pageX /*+ document.getElementById("container").scrollLeft - X_LOWER_LIMIT)*/ - parseInt(document.getElementById("detector").style.left) - detectordim[0]/2);
+  ydragoffset = Math.round(e.pageY /*+ document.getElementById("container").scrollTop - Y_LOWER_LIMIT)*/ - parseInt(document.getElementById("detector").style.top) - detectordim[1]/2);
 
-    // console.log(xdragoffset.toString()+", "+ydragoffset.toString());
+  // console.log(xdragoffset.toString()+", "+ydragoffset.toString());
 
 }
 
 function update() {
     // console.log("updating echelle");
-    ZOOM = parseFloat($("#zoom").val())/2;;
+<<<<<<< HEAD
+    ZOOM = parseFloat($("#zoom").val());
+=======
+    ZOOM = parseFloat(document.getElementById("zoom").value)/2;
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
     ctx.beginPath();
-    ctx.clearRect(0, 0, 1000, 2000);
+    ctx.clearRect(0, 0, 2000, 2000);
 
+<<<<<<< HEAD
     filter = $("#switchFilter").val();
-    slit = $("#switchSlit").val();
+    slit = $("#switchSlit").val().match(/(.+)"x(\d+)\s\((\d+)/);
+    slitWidth = slit[1];
+    slitLength = slit[2];
+    slitPix = slit[3];
     if (!filter) filter = "N1"
-    if (!slit) slit = "12"
+    if (!slitLength) slitLength = "12"
+=======
+    filter = document.getElementById("switchFilter").value;
+>>>>>>> parent of 6f20b4c... jquery, good formatting, includes all filters
 
+    
     // color=something
-    console.log("drawing echelle, ", ZOOM, filter);
+    // console.log("drawing echelle, zoom="+ZOOM.toString());
 
     drawEchelle();
 
@@ -731,26 +947,21 @@ function update() {
 }
 
 function detectorTog() {
-    if ($("#toggleDetector").val() == "Show Detector") {
-        $("#toggleDetector").val("Hide Detector");
-        $("#detector").show();
-    }
-    else {
-        $("#toggleDetector").val("Show Detector");
-        $("#detector").hide();
-    }
+  var detector = document.getElementById("detector");
+
+  if (detector.style.display != "none" ) {
+    detector.style.display = "none";
+    document.getElementById("toggleDetector").value = "Show Detector";
+  }
+  else {
+    detector.style.display = "block";
+    document.getElementById("toggleDetector").value = "Hide Detector";
+  }
 }
-
-$(window).on('load', function() {
-    update();
-    setDetectorPositionAngle();
-});
-
-$("#toggleDetector").click(detectorTog);
-
-$(".settings-item").on("change", update)
 
 function updateAllAngles() {
-    setEchelleAngle($("#FindEchelleAngle").val());
-    setCrossDisperserAngle($("#FindCrossDisperserAngle").val());
+  setEchelleAngle(document.getElementById("FindEchelleAngle").value);
+  setCrossDisperserAngle(document.getElementById("FindCrossDisperserAngle").value);
 }
+
+
