@@ -7,20 +7,14 @@ echellecanvas.width=1.5 * ecwidth;
 var ctx = echellecanvas.getContext("2d");
 $("#spectrumgraph").scrollTop(($("#spectrumgraph").scrollTop()+50).toString());
 
-const angstroms_per_micron = 10000;
-const mm_per_meter = 1000;
-const mm_per_angstrom = .0000001;
-const MAXO = 100;
-
-const MM_PER_PIXEL = 0.037; // 1/27 or 27/10000?
-const PRECISION = 4;
-
 const DETECTOR_HEIGHT = 1024;
 const DETECTOR_WIDTH = 1024;
 const DETECTOR_NUMBER = 1;
 
 // const arcsec_width = 7;
-const ARCSECONDS_PER_PIXEL = 0.193;
+// const ARCSECONDS_PER_PIXEL = 0.193;
+const ARCSECONDS_PER_PIXEL = 0.2; // correct for y direction
+
 
 const MARKER_COLOR = "white";
 
@@ -52,29 +46,37 @@ var filters = {
     "KP": [1.950, 2.295]
 }
 
+const angstroms_per_micron = 10000;
+const mm_per_meter = 1000;
+const mm_per_angstrom = .0000001;
+const MAXO = 100;
+
+const MM_PER_PIXEL = 0.027; // 1/27 or 27/10000?
+const PRECISION = 4;
+
 var true_max_wavelength = 5.6*angstroms_per_micron;
 var true_min_wavelength = 0.92*angstroms_per_micron;
 var max_wavelength = true_max_wavelength;
 var min_wavelength = true_min_wavelength;
 
-var camera_focal_length = 0.763;
-var collimator_focal_length = 4.155;
+// var camera_focal_length = 0.763; // still hires. in meters?
+var camera_focal_length = 0.406; // still hires
+
+// var collimator_focal_length = 4.155; // still hires but never used
 
 // main (echelle)
-var sigma = 43.103; // 1/ruling density in microns
-var delta = 63.5; // echelle blaze
-var theta = 5.000; // original: 5
+var ecsigma = 43.103; // 1/ruling density in microns
+var ecdeltad = 63.5; // echelle blaze
+// change delta to 10 on lowres mode
+var ecthetad = 5.000; // original: 5
 
 // cross disperser (STILL USING HIRES DATA)
-var xddeltad = 4.449;
-var xdalfbet = 40.0;
-var xdsigma  = 13.33;
-var xdsigmai = 250.0; // cross disperser lines/mm
-
-// echelle-specific
-var ecsigma = sigma;
-var ecthetad = theta;
-var ecdeltad = delta;
+// var xddeltad = 4.449;
+var xddeltad = 36.63; // cross disperser blaze (10 when lowres)
+var xdalfbet = 40; // what is this
+// var xdalfbet = 133.3;
+var xdsigma = 13.33; // correct (xdsigma = 1000/xdsigmai)
+var xdsigmai = 75.01875468867216; // cross disperser lines/mm
 
 $("#FindEchelleAngle").val(ecdeltad);
 $("#FindCrossDisperserAngle").val(xddeltad);
@@ -143,7 +145,12 @@ var detectordim = [0,0];
 var plottedwavelengths = [];
 var url;
 var filter = "N1";
-var slit = "12"
+var slit = "12";
+
+var slitWidth = 0;
+var slitLength = 0;
+var slitPix = 0;
+
 
 function transform_mm_to_screen_pixels(mm) {
     var pixels = [0,0];
@@ -181,7 +188,7 @@ function drawEchelle() {
     var line_width = (MM_PER_PIXEL*arcsec_width*ZOOM/ARCSECONDS_PER_PIXEL);
     // console.log(line_width); Math.round
 
-    f2dbdl = camera_focal_length * mm_per_meter / ( sigma * Math.cos( (delta - theta) * Math.PI/180 ) );
+    f2dbdl = camera_focal_length * mm_per_meter / ( ecsigma * Math.cos( (ecdeltad - ecthetad) * Math.PI/180 ) );
 
     xdangle = 0;
     xdalphad = xdangle + xddeltad + xdalfbet*0.5;
@@ -199,9 +206,9 @@ function drawEchelle() {
     endpoints=[];
     drawable=[];
 
-    base = 2.0 * sigma * Math.sin( delta * Math.PI/180 ) * Math.cos( theta * Math.PI/180 );
-    max_order_number = Math.round( angstroms_per_micron * base / min_wavelength + 0.5 ) + 1;
-    min_order_number = Math.round(angstroms_per_micron * base / max_wavelength - 0.5);
+    base = 2.0 * ecsigma * Math.sin( ecdeltad * Math.PI/180 ) * Math.cos( ecthetad * Math.PI/180 );
+    max_order_number = Math.round( angstroms_per_micron * base / min_wavelength + 0.5 ) -1;
+    min_order_number = Math.round(angstroms_per_micron * base / max_wavelength - 0.5) - 2;
     number_of_orders = (max_order_number - min_order_number - 1);
 
     var central_order = Math.round((max_order_number-min_order_number)/2);
@@ -269,8 +276,12 @@ function drawEchelle() {
 
     //   linewidths[i] = ;
     // }
+    // $("#detector").css({
+    //     "transform": "rotate("+(180*Math.atan((endpoints[0][3]-endpoints[0][1])/(endpoints[0][2]-endpoints[0][0]))/3.14).toString()+"deg)"
+    // })
+
     $("#detector").css({
-        "transform": "rotate("+(180*Math.atan((endpoints[0][3]-endpoints[0][1])/(endpoints[0][2]-endpoints[0][0]))/3.14).toString()+"deg)"
+        "transform": "rotate(-4.657deg)"
     })
 
 
