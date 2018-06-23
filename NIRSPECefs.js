@@ -625,6 +625,7 @@ function setDetectorPositionWavelength() {
                 document.getElementById("lambdainput").value = (detlambda/angstroms_per_micron).toPrecision(PRECISION).toString();
 
                 ecangle = ((180/Math.PI)*(Math.asin( order[detord] * detlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) ).toPrecision(PRECISION);
+                // TODO xdangle is not right
                 xdangle = ((180/Math.PI)*(Math.asin( detlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) ).toPrecision(PRECISION);
                 document.getElementById("EchelleAngle").innerHTML = "Echelle Angle:<br>"+ecangle.toString()+String.fromCharCode(176);
                 document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle:<br>"+xdangle.toString()+String.fromCharCode(176);
