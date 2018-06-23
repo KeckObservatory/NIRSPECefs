@@ -14,6 +14,7 @@ const DETECTOR_NUMBER = 1;
 // const arcsec_width = 7;
 // const ARCSECONDS_PER_PIXEL = 0.193;
 const ARCSECONDS_PER_PIXEL = 0.2; // correct for y direction
+// x direction is 0.16 but is not used in this calculation
 
 
 const MARKER_COLOR = "white";
@@ -60,7 +61,8 @@ var max_wavelength = true_max_wavelength;
 var min_wavelength = true_min_wavelength;
 
 // var camera_focal_length = 0.763; // still hires. in meters?
-var camera_focal_length = 0.406; // still hires
+var camera_focal_length = 0.465; // still hires 406 or 465
+// 465 IS RIGHT
 
 // var collimator_focal_length = 4.155; // still hires but never used
 
@@ -73,10 +75,14 @@ var ecthetad = 5.000; // original: 5
 // cross disperser (STILL USING HIRES DATA)
 // var xddeltad = 4.449;
 var xddeltad = 36.63; // cross disperser blaze (10 when lowres)
-var xdalfbet = 40; // what is this
+var xdalfbet = 85.57; // what is this (calculated backwards)
 // var xdalfbet = 133.3;
 var xdsigma = 13.33; // correct (xdsigma = 1000/xdsigmai)
 var xdsigmai = 75.01875468867216; // cross disperser lines/mm
+
+// base = 2.0 * ecsigma * Math.sin( ecdeltad * Math.PI/180 ) * Math.cos( ecthetad * Math.PI/180 );
+base = 76.19928;
+f2dbdl = camera_focal_length * mm_per_meter / ( ecsigma * Math.cos( (ecdeltad - ecthetad) * Math.PI/180 ) );
 
 $("#FindEchelleAngle").val(ecdeltad);
 $("#FindCrossDisperserAngle").val(xddeltad);
@@ -85,7 +91,7 @@ $("#EchelleAngle").html("Echelle Angle:<br>"+ecdeltad.toString()+'°');
 
 var base;  // echelle grating constant m*lambda in microns
 var demag; // resulting magnification as if there were no dispersers
-var bwav;  // the blaze wavelenght of an order in microns
+var bwav;  // the blaze wavelength of an order in microns
 var f2dbdl;  // factor required to compute length on detector of FSR of an order
 var xdalphad;// the incident angle (alpha) in degrees
 var sinalpha;// sine of the incident angle
@@ -115,11 +121,12 @@ var temp;
 var echellerect = echellecanvas.getBoundingClientRect();
 // console.log(echellerect.top, echellerect.right, echellerect.bottom, echellerect.left);
 var X_LOWER_LIMIT = 10;          //  Lower limit on coord in X direction
-var X_UPPER_LIMIT = parseInt(window.getComputedStyle(document.getElementById("container"),null).getPropertyValue("width"));      //  Upper limit on coord in X direction
-var Y_LOWER_LIMIT = 10;          //  Lower limit on coord in Y direction
-var Y_UPPER_LIMIT = echellerect.bottom;
+var X_UPPER_LIMIT = 10+parseFloat($('#echellebg').css("width"));      //  Upper limit on coord in X direction
+var Y_LOWER_LIMIT = parseFloat($('#echellebg').css("margin-top"));          //  Lower limit on coord in Y direction
+var Y_UPPER_LIMIT = Y_LOWER_LIMIT + parseFloat($('#echellebg').css("height"));
 // var ZOOM = 4.5*((echellerect.right-echellerect.left)/600);
 var ZOOM = parseFloat($("#zoom").val())/2;;
+// TODO: add support for window resize like NIRC2
 
 console.log(ZOOM);
 
@@ -151,7 +158,7 @@ var slitWidth = 0;
 var slitLength = 0;
 var slitPix = 0;
 
-
+``
 function transform_mm_to_screen_pixels(mm) {
     var pixels = [0,0];
     pixels[0] = Math.round(FOCAL_PLANE_SCREEN_POSITION[0] + ( ZOOM * mm[0] )); // TODO: solve equation so focal position 0 = halfway down the screen
@@ -175,7 +182,7 @@ function drawEchelle() {
 
     detectordim = [
         DETECTOR_WIDTH *  MM_PER_PIXEL * ZOOM,
-        DETECTOR_NUMBER*(DETECTOR_HEIGHT * MM_PER_PIXEL * ZOOM +1)
+        DETECTOR_HEIGHT * MM_PER_PIXEL * ZOOM +1
     ];
     $("#detector").css({
         "width": detectordim[0].toString()+'px',
@@ -187,8 +194,6 @@ function drawEchelle() {
     var arcsec_width = slitLength;
     var line_width = (MM_PER_PIXEL*arcsec_width*ZOOM/ARCSECONDS_PER_PIXEL);
     // console.log(line_width); Math.round
-
-    f2dbdl = camera_focal_length * mm_per_meter / ( ecsigma * Math.cos( (ecdeltad - ecthetad) * Math.PI/180 ) );
 
     xdangle = 0;
     xdalphad = xdangle + xddeltad + xdalfbet*0.5;
@@ -206,7 +211,6 @@ function drawEchelle() {
     endpoints=[];
     drawable=[];
 
-    base = 2.0 * ecsigma * Math.sin( ecdeltad * Math.PI/180 ) * Math.cos( ecthetad * Math.PI/180 );
     max_order_number = Math.round( angstroms_per_micron * base / min_wavelength + 0.5 ) -1;
     min_order_number = Math.round(angstroms_per_micron * base / max_wavelength - 0.5) - 2;
     number_of_orders = (max_order_number - min_order_number - 1);
@@ -229,13 +233,14 @@ function drawEchelle() {
         bwav = base / order[i];      // blaze wavelength of order i in microns
         wv[i] = bwav * angstroms_per_micron;  // blaze wavelength or order i in Angstroms
         fsr[i] = wv[i] / order[i];   // Free Spectral Range of order i in Angstroms
+        console.log(order[i], bwav, fsr[i]);
         FSR_2beta[i]= bwav * f2dbdl;     // length of fsr in mm
     }
 
     temp = (xdangle + xddeltad - xdalfbet * 0.5) * Math.PI/180;
 
     for ( i = 0; i <= number_of_orders+1; i++ ) {
-        xbeta[i] = Math.asin( xdsigmai * mm_per_angstrom * wv[i] - sinalpha );
+        xbeta[i] = Math.asin( xdsigmai * mm_per_angstrom * wv[i] - sinalpha ); // angle of what?
     }
 
     for ( i = 0; i <= number_of_orders+1; i++ ) {
@@ -256,11 +261,11 @@ function drawEchelle() {
         var scr1 = [0, 0];    // blue end of an order in screen pixels
         var scr2 = [0, 0];    // red  end of an order in screen pixels
 
-        mm1[0] = -0.5 * FSR_2beta[i];
-        mm2[0] = 0.5 * FSR_2beta[i];
+        mm1[0] = -0.5 * FSR_2beta[i]; // x
+        mm1[1] = 0.5 * (x[i] + x[i - 1]); // y
 
-        mm1[1] = 0.5 * (x[i] + x[i - 1]);
-        mm2[1] = 0.5 * (x[i] + x[i + 1]);
+        mm2[0] = 0.5 * FSR_2beta[i]; // x
+        mm2[1] = 0.5 * (x[i] + x[i + 1]); // y
 
         scr1 = transform_mm_to_screen_pixels(mm1);
         scr2 = transform_mm_to_screen_pixels(mm2);
@@ -571,21 +576,6 @@ function setDetectorPositionWavelength() {
     function handleMouseMove(e) {
         var eventDoc, doc, body, pageX, pageY;
 
-        // event = event || window.event; //makes stuff work in IE
-
-        // if (event.pageX == null && event.clientX != null) {
-        //     eventDoc = (event.target && event.target.ownerDocument) || document;
-        //     doc = eventDoc.documentElement;
-        //     body = eventDoc.body;
-
-        //     event.pageX = event.clientX +
-        //       (doc && doc.scrollLeft || body && body.scrollLeft || 0) -
-        //       (doc && doc.clientLeft || body && body.clientLeft || 0);
-        //     event.pageY = event.clientY +
-        //       (doc && doc.scrollTop  || body && body.scrollTop  || 0) -
-        //       (doc && doc.clientTop  || body && body.clientTop  || 0 );
-        //   }
-
         var posx;
         var posy;
 
@@ -761,6 +751,11 @@ function detectorTog() {
 }
 
 $(window).on('load', function() {
+    $('#echelle').attr({
+        width:parseFloat($('#echelle').css("width")),
+        height:parseFloat($('#echelle').css("width"))
+    });
+    $('#container').css("height", $('#echelle').css("width"));
     update();
     setDetectorPositionAngle();
 });

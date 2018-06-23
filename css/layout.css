@@ -38,6 +38,7 @@ input[type="text"]{
 }
 
 #keckcontainer {
+    margin: 0 auto
     height: 50%;
     display: flex;
     align-items: center;
@@ -62,14 +63,25 @@ input[type="text"]{
   height: 97%;
   margin: 10px;
   overflow: scroll;
-  border: 1px solid black;
+  /* border: 1px solid black; */
   display: inline-block;
 }
 
 #echelle {
-  left:0px;
-  top:0px;
-  background-color: rgba(120,120,120,0.3);
+    height:100%;
+    width: 100%;
+}
+#echellebg {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto 0 auto 10px;
+    height:50vw;
+    width:50vw;
+    border: 1px solid black;
+    position: absolute;
+    background-color: rgba(200,200,200,0.5);
 }
 
 .data {
@@ -95,6 +107,7 @@ input[type="text"]{
   display: inline-block;
   margin: auto 0;
   padding-right: 10px;
+  font-size: 14px;
 }
 
 #ui-top {
@@ -288,6 +301,7 @@ select:focus, select:active {
   display: block;
   filter: alpha(opacity=35); /* For IE8 and earlier */
     border: 2px solid black;
+    z-index: 90;
 /*    border-bottom: 3px solid black;
 */
 }
@@ -309,6 +323,7 @@ select:focus, select:active {
 .dropdown {
     position: relative;
     display: inline-block;
+    /* text-align: center; */
 }
 
 .dropdown .dropdown-menu {
