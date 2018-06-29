@@ -7,14 +7,59 @@ echellecanvas.width=1.5 * ecwidth;
 var ctx = echellecanvas.getContext("2d");
 $("#spectrumgraph").scrollTop(($("#spectrumgraph").scrollTop()+50).toString());
 
+// unit conversion
+const angstroms_per_micron = 10000;
+const mm_per_meter = 1000;
+const mm_per_angstrom = .0000001;
+const MAXO = 100;
+
+const PRECISION = 4;
+
+// instrument constants
+
+// pre-Augst 2018
 const DETECTOR_HEIGHT = 1024;
 const DETECTOR_WIDTH = 1024;
 const DETECTOR_NUMBER = 1;
+// var camera_focal_length = 0.763; // still hires. in meters?
+var camera_focal_length = 0.465; // still hires 406 or 465
+// 465 IS RIGHT
+
+// var collimator_focal_length = 4.155; // still hires but never used
+
+// main (echelle)
+var ecsigma = 43.103; // 1/ruling density in microns
+// var ecdeltad = 63.5; // echelle blaze
+var ecdeltad = 63; // echelle blaze
+
+// change delta to 10 on lowres mode
+var ecthetad = 5.000; // original: 5
+
+// cross disperser (STILL USING HIRES DATA)
+var xddeltad = 36.63; // cross disperser blaze (10 when lowres)
+var xdalfbet = 85.57; // what is this (calculated backwards)
+// var xdalfbet = 133.3;
+var xdsigma = 13.33; // correct (xdsigma = 1000/xdsigmai)
+var xdsigmai = 75.01875468867216; // cross disperser lines/mm
+
+const MM_PER_PIXEL = 0.027; // 1/27 or 27/10000?
 
 // const arcsec_width = 7;
 // const ARCSECONDS_PER_PIXEL = 0.193;
 const ARCSECONDS_PER_PIXEL = 0.2; // correct for y direction
 // x direction is 0.16 but is not used in this calculation
+
+// upgrade
+// const DETECTOR_HEIGHT = 2048;
+// const DETECTOR_WIDTH = 2048;
+// const DETECTOR_NUMBER = 1;
+
+
+// echelle grating constant m*lambda in microns
+var base = 2.0 * ecsigma * Math.sin( ecdeltad * Math.PI/180 ) * Math.cos( ecthetad * Math.PI/180 );
+// base = 76.19928;
+// factor required to compute length on detector of FSR of an order
+var f2dbdl = camera_focal_length * mm_per_meter / ( ecsigma * Math.cos( (ecdeltad - ecthetad) * Math.PI/180 ) );
 
 
 const MARKER_COLOR = "white";
@@ -47,52 +92,18 @@ var filters = {
     "KP": [1.950, 2.295]
 }
 
-const angstroms_per_micron = 10000;
-const mm_per_meter = 1000;
-const mm_per_angstrom = .0000001;
-const MAXO = 100;
-
-const MM_PER_PIXEL = 0.027; // 1/27 or 27/10000?
-const PRECISION = 4;
-
 var true_max_wavelength = 5.6*angstroms_per_micron;
 var true_min_wavelength = 0.92*angstroms_per_micron;
 var max_wavelength = true_max_wavelength;
 var min_wavelength = true_min_wavelength;
-
-// var camera_focal_length = 0.763; // still hires. in meters?
-var camera_focal_length = 0.465; // still hires 406 or 465
-// 465 IS RIGHT
-
-// var collimator_focal_length = 4.155; // still hires but never used
-
-// main (echelle)
-var ecsigma = 43.103; // 1/ruling density in microns
-var ecdeltad = 63.5; // echelle blaze
-// change delta to 10 on lowres mode
-var ecthetad = 5.000; // original: 5
-
-// cross disperser (STILL USING HIRES DATA)
-// var xddeltad = 4.449;
-var xddeltad = 36.63; // cross disperser blaze (10 when lowres)
-var xdalfbet = 85.57; // what is this (calculated backwards)
-// var xdalfbet = 133.3;
-var xdsigma = 13.33; // correct (xdsigma = 1000/xdsigmai)
-var xdsigmai = 75.01875468867216; // cross disperser lines/mm
-
-// base = 2.0 * ecsigma * Math.sin( ecdeltad * Math.PI/180 ) * Math.cos( ecthetad * Math.PI/180 );
-base = 76.19928;
-f2dbdl = camera_focal_length * mm_per_meter / ( ecsigma * Math.cos( (ecdeltad - ecthetad) * Math.PI/180 ) );
 
 $("#FindEchelleAngle").val(ecdeltad);
 $("#FindCrossDisperserAngle").val(xddeltad);
 $("#EchelleAngle").html("Echelle Angle:<br>"+ecdeltad.toString()+'°');
 // document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle:<br>"+xddeltad.toString()+String.fromCharCode(176);
 
-var base;  // echelle grating constant m*lambda in microns
 var demag; // resulting magnification as if there were no dispersers
 var bwav;  // the blaze wavelength of an order in microns
-var f2dbdl;  // factor required to compute length on detector of FSR of an order
 var xdalphad;// the incident angle (alpha) in degrees
 var sinalpha;// sine of the incident angle
 var xdangle; // cross disperser angle (not the one that moves)
@@ -178,7 +189,7 @@ function drawEchelle() {
     max_wavelength = filters[filter][1] * angstroms_per_micron;
     min_wavelength = filters[filter][0] * angstroms_per_micron;
 
-    console.log(min_wavelength,max_wavelength)
+    // console.log(min_wavelength,max_wavelength)
 
     detectordim = [
         DETECTOR_WIDTH *  MM_PER_PIXEL * ZOOM,
@@ -201,18 +212,20 @@ function drawEchelle() {
 
     // console.log("f2dbdl:"+f2dbdl.toString())
 
+    // TODO: considering replacing all these data structures with a more
+    // javascript-ish JSON object structure
     fsr = new Array(MAXO);     // Free Spectral Range (mm) of each order
     FSR_2beta = new Array(MAXO); // width of FSR * beta (mm) of each order
     order = new Array(MAXO);      // mapping from 0-n indices to order numbers
     wv = new Array(MAXO);      // blaze wavelength of each order
     xbeta = new Array(MAXO);
-    x = new Array(MAXO);     // cross disperser displacement at camera (mm)
+    y_mm = new Array(MAXO);     // cross disperser displacement at camera (mm)
     delx = new Array(MAXO);    // tilt delta (mm)
     endpoints=[];
     drawable=[];
 
-    max_order_number = Math.round( angstroms_per_micron * base / min_wavelength + 0.5 ) -1;
-    min_order_number = Math.round(angstroms_per_micron * base / max_wavelength - 0.5) - 2;
+    max_order_number = Math.round( angstroms_per_micron * base / min_wavelength + 0.5 ) - 1;
+    min_order_number = Math.round( angstroms_per_micron * base / max_wavelength - 0.5 ) - 2;
     number_of_orders = (max_order_number - min_order_number - 1);
 
     var central_order = Math.round((max_order_number-min_order_number)/2);
@@ -233,7 +246,7 @@ function drawEchelle() {
         bwav = base / order[i];      // blaze wavelength of order i in microns
         wv[i] = bwav * angstroms_per_micron;  // blaze wavelength or order i in Angstroms
         fsr[i] = wv[i] / order[i];   // Free Spectral Range of order i in Angstroms
-        console.log(order[i], bwav, fsr[i]);
+        // console.log(order[i], bwav, fsr[i]);
         FSR_2beta[i]= bwav * f2dbdl;     // length of fsr in mm
     }
 
@@ -244,14 +257,14 @@ function drawEchelle() {
     }
 
     for ( i = 0; i <= number_of_orders+1; i++ ) {
-        x[i] = ( xbeta[i] - temp) * camera_focal_length * mm_per_meter;
+       y_mm[i] = ( xbeta[i] - temp) * camera_focal_length * mm_per_meter;
     }
 
     for ( i = 1; i <= number_of_orders; i++ ) {
-        delx[i] = 0.5 * ( x[i+1] - x[i-1] );  // for subseq tilt calcs
+        delx[i] = 0.5 * (y_mm[i+1] -y_mm[i-1] );  // for subseq tilt calcs
     }
 
-    FOCAL_PLANE_SCREEN_POSITION = [ Math.round((X_UPPER_LIMIT-X_LOWER_LIMIT)/2), (10*X_LOWER_LIMIT) + (ZOOM * 0.5 * (x[number_of_orders] + x[number_of_orders-1]))];
+    FOCAL_PLANE_SCREEN_POSITION = [ Math.round((X_UPPER_LIMIT-X_LOWER_LIMIT)/2), (10*X_LOWER_LIMIT) + (ZOOM * 0.5 * ( y_mm[number_of_orders] +y_mm[number_of_orders-1]))];
 
     // console.log(FOCAL_PLANE_SCREEN_POSITION);
 
@@ -262,10 +275,10 @@ function drawEchelle() {
         var scr2 = [0, 0];    // red  end of an order in screen pixels
 
         mm1[0] = -0.5 * FSR_2beta[i]; // x
-        mm1[1] = 0.5 * (x[i] + x[i - 1]); // y
+        mm1[1] = 0.5 * ( y_mm[i] +y_mm[i - 1]); // y
 
         mm2[0] = 0.5 * FSR_2beta[i]; // x
-        mm2[1] = 0.5 * (x[i] + x[i + 1]); // y
+        mm2[1] = 0.5 * ( y_mm[i] + y_mm[i + 1]); // y
 
         scr1 = transform_mm_to_screen_pixels(mm1);
         scr2 = transform_mm_to_screen_pixels(mm2);
@@ -278,13 +291,11 @@ function drawEchelle() {
 
     // // find width of each order
     // for (i=1; i<=number_of_orders; i++) {
-
     //   linewidths[i] = ;
     // }
-    // $("#detector").css({
-    //     "transform": "rotate("+(180*Math.atan((endpoints[0][3]-endpoints[0][1])/(endpoints[0][2]-endpoints[0][0]))/3.14).toString()+"deg)"
-    // })
 
+
+    // detector for NIRSPEC is rotated to better fit orders.
     $("#detector").css({
         "transform": "rotate(-4.657deg)"
     })
@@ -377,7 +388,7 @@ function findLambda(orderindex, cursor_x, cursor_y) {
     var dispamm = fsr[orderindex] / FSR_2beta[orderindex]; //converts free spectral range to mm
     var lambda_at_cursor = blaze_lambda_at_cursor + dispamm * xmm;
 
-    var y1 = x[orderindex];
+    var y1 = y_mm[orderindex];
     y1 = y1 + delx[orderindex] * (cursor_x)/FSR_2beta[orderindex];
     //    y1 = y1 - delx[ orderindex ] * (cursor_x)/FSR_2beta[orderindex];
     var dy1 = ( (cursor_y) - y1 ) / delx[orderindex];
@@ -409,13 +420,17 @@ function findLambdaOrderIndex(wav) {
 
 function findLambdaLocation(waveln, set, add) {
 
-    waveln = parseInt(waveln);
+    if (parseInt(waveln) < 10) waveln = 10000*parseInt(waveln);
+    else {
+        waveln = parseInt(waveln); console.log(waveln)
+    }
 
     if(waveln<min_wavelength || waveln>max_wavelength) {
         // if(waveln<6){
         //   waveln=waveln*angstroms_per_micron;
         // }
         // else {
+        console.log('out of bounds', waveln, min_wavelength, max_wavelength)
         return;
         // }
     }
@@ -506,11 +521,13 @@ function setDetectorPositionAngle() {
     $("#EchelleAngle").html("Echelle Angle:<br>"+setecangle.toString()+String.fromCharCode(176));
     $("#CrossDisperserAngle").html("Cross Disperser Angle:<br>"+setxdangle.toString()+String.fromCharCode(176));
 
-    var xdanglelambda = Math.abs( Math.sin((setxdangle+xddeltad)*(Math.PI/180)) * ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180) * (xdalfbet*0.5) ) ) );
+    var xdanglelambda = Math.abs( Math.sin((setxdangle+xddeltad)*(Math.PI/180)) * ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180) * (xdalfbet*0.5) ) ));
     var centralorder = order[findLambdaOrderIndex(xdanglelambda)];
-    var ecanglelambda = Math.abs( Math.sin((setecangle+ecdeltad)*(Math.PI/180)) * ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180) * ecthetad ) ) / centralorder);
+    var ecanglelambda = Math.abs( Math.sin((setecangle+ecdeltad)*(Math.PI/180)) * ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180) * (ecthetad) ) ) / centralorder);
 
     var lambdalocation = findLambdaLocation(ecanglelambda,false,false);
+
+    console.log(xdanglelambda,ecanglelambda)
 
     $("#CentralOrder").html("Central Order: "+centralorder.toString());
     $("#lambdainput").val((ecanglelambda/angstroms_per_micron).toPrecision(PRECISION).toString());
@@ -624,9 +641,9 @@ function setDetectorPositionWavelength() {
 
                 document.getElementById("lambdainput").value = (detlambda/angstroms_per_micron).toPrecision(PRECISION).toString();
 
-                ecangle = ((180/Math.PI)*(Math.asin( order[detord] * detlambda / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) ).toPrecision(PRECISION);
                 // TODO xdangle is not right
-                xdangle = ((180/Math.PI)*(Math.asin( detlambda / ( 2.0 * angstroms_per_micron * xdsigma * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) ).toPrecision(PRECISION);
+                ecangle = ((180/Math.PI)*(Math.asin( (order[detord] * detlambda) / ( 2.0 * angstroms_per_micron * ecsigma * Math.cos( (Math.PI/180)*ecthetad) ))) ).toPrecision(PRECISION);
+                xdangle = ((180/Math.PI)*(Math.asin( (order[detord] * detlambda) / ( 2.0 * angstroms_per_micron * xdsigmai * Math.cos( (Math.PI/180)*(xdalfbet*0.5) )))) ).toPrecision(PRECISION);
                 document.getElementById("EchelleAngle").innerHTML = "Echelle Angle:<br>"+ecangle.toString()+String.fromCharCode(176);
                 document.getElementById("CrossDisperserAngle").innerHTML = "Cross Disperser Angle:<br>"+xdangle.toString()+String.fromCharCode(176);
                 document.getElementById("CentralOrder").innerHTML = "Central Order: "+order[detord].toString();
